@@ -63,9 +63,9 @@ const authAmplify = {
     },
     {
       element: (
-        <CompactLayout>
+        <AuthClassicLayout>
           <Outlet />
-        </CompactLayout>
+        </AuthClassicLayout>
       ),
       children: [
         { path: 'verify', element: <AmplifyVerifyPage /> },
@@ -89,9 +89,9 @@ const authJwt = {
     {
       path: 'login',
       element: (
-        <AuthModernCompactLayout>
+        <AuthClassicLayout>
           <JwtLoginPage />
-        </AuthModernCompactLayout>
+        </AuthClassicLayout>
       ),
     },
     {

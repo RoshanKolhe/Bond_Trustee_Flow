@@ -23,6 +23,7 @@ import { SentIcon } from 'src/assets/icons';
 // components
 import Iconify from 'src/components/iconify';
 import FormProvider, { RHFTextField, RHFCode } from 'src/components/hook-form';
+import { Card } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -179,9 +180,11 @@ export default function AmplifyNewPasswordView() {
       <SentIcon sx={{ height: 96 }} />
 
       <Stack spacing={1} sx={{ my: 5 }}>
-        <Typography variant="h3">Request sent successfully!</Typography>
+        <Typography variant="h3" sx={{ display: 'flex', justifyContent: 'center' }}>
+          Verification Code Sent
+        </Typography>
 
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
           We&apos;ve sent a 6-digit confirmation email to your email.
           <br />
           Please enter the code in below box to verify your email.
@@ -192,9 +195,11 @@ export default function AmplifyNewPasswordView() {
 
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
-      {renderHead}
+      <Card sx={{ p: 3 }}>
+        {renderHead}
 
-      {renderForm}
+        {renderForm}
+      </Card>
     </FormProvider>
   );
 }

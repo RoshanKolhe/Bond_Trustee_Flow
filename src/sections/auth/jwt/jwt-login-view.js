@@ -24,6 +24,7 @@ import { useAuthContext } from 'src/auth/hooks';
 import Iconify from 'src/components/iconify';
 import FormProvider, { RHFTextField, RHFCheckbox } from 'src/components/hook-form';
 import { useSnackbar } from 'notistack';
+import { Card, Grid } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -47,7 +48,7 @@ export default function JwtLoginView() {
     password: Yup.string().required('Password is required'),
     remember: Yup.boolean(),
   });
-  
+
   const defaultValues = {
     email: '',
     password: '',
@@ -108,7 +109,13 @@ export default function JwtLoginView() {
     <Stack spacing={2.5}>
       {!!errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
-      <Typography variant="h4">Login</Typography>
+      <Typography variant="h4" sx={{ display: 'flex', justifyContent: 'center' }}>
+        Login
+      </Typography>
+      <Typography variant="body1" sx={{ textAlign: 'center' }}>
+        Log in securely to manage your account, protect your personal information, and stay safe
+        with advanced security features
+      </Typography>
 
       <RHFTextField name="email" label="Email address" />
 
@@ -154,6 +161,9 @@ export default function JwtLoginView() {
       >
         Login
       </LoadingButton>
+      <Typography variant="body2" sx={{ textAlign: 'center' }}>
+        copy right © 2023 mynameisbond all right reserve
+      </Typography>
     </Stack>
   );
 
@@ -164,8 +174,7 @@ export default function JwtLoginView() {
       <Alert severity="info" sx={{ mb: 3 }}>
         Use email : <strong>demo@minimals.cc</strong> / password :<strong> demo1234</strong>
       </Alert> */}
-
-      {renderForm}
+      <Card sx={{ p: 3, py: 5 }}>{renderForm}</Card>
     </FormProvider>
   );
 }
