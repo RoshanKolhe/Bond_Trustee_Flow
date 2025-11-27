@@ -93,12 +93,10 @@ export default function JwtLoginView() {
 
   const renderHead = (
     <Stack spacing={2} sx={{ mb: 5 }}>
-      <Typography variant="h4">Sign in to Minimal</Typography>
-
       <Stack direction="row" spacing={0.5}>
         <Typography variant="body2">New user?</Typography>
 
-        <Link component={RouterLink} href={paths.auth.jwt.register} variant="subtitle2">
+        <Link component={RouterLink} href={paths.auth.jwt.registerPhone} variant="subtitle2">
           Create an account
         </Link>
       </Stack>
@@ -116,6 +114,13 @@ export default function JwtLoginView() {
         Log in securely to manage your account, protect your personal information, and stay safe
         with advanced security features
       </Typography>
+      <Stack direction="row" spacing={0.5}>
+        <Typography variant="body2">New user?</Typography>
+
+        <Link component={RouterLink} href={paths.auth.jwt.registerPhone} variant="subtitle2">
+          Create an account
+        </Link>
+      </Stack>
 
       <RHFTextField name="email" label="Email address" />
 

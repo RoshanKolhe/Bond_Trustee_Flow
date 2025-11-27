@@ -70,5 +70,15 @@ export const endpoints = {
     list: '/designations',
     filterList: (filter) => `/designations?filter=${filter}`,
     details: (id) => `/designations/${id}`,
+  },
+  entityType: {
+    list: '/company-entity-types',
+    filterList: (filter) => `/company-entity-types?filter=${filter}`,
+    details: (id) => `/company-entity-types/${id}`,
+  },
+  sector: {
+    list: '/company-sector-types',
+    filterList: (filter) => `/company-sector-types?filter=${filter}`,
+    details: (id) => `/company-sector-types/${id}`,
   }
 };

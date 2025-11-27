@@ -145,30 +145,72 @@ export default function KYCSignatories() {
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
-                <TableCell align="left">DIN</TableCell>
                 <TableCell align="left">Role</TableCell>
                 <TableCell align="left">Email</TableCell>
                 <TableCell align="left">Phone</TableCell>
-                <TableCell align="left">ID Proof</TableCell>
+                <TableCell align="left">DOB</TableCell>
+                <TableCell align="left">PAN</TableCell>
+                <TableCell align="left">Aadhaar</TableCell>
+                <TableCell align="left">Photo</TableCell>
+                <TableCell align="left">Signature</TableCell>
                 <TableCell align="left">Status</TableCell>
-
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {filteredRows.map((row) => (
-                <TableRow key={row.din} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                  <TableCell component="th" scope="row">
-                    {row.name}
+              {filteredRows.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.role}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.phone}</TableCell>
+                  <TableCell>{row.dob}</TableCell>
+
+                  <TableCell>
+                    {row.pan ? (
+                      <a href={row.pan} target="_blank" rel="noopener noreferrer">
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                  <TableCell align="left">{row.din}</TableCell>
-                  <TableCell align="left">{row.role}</TableCell>
-                  <TableCell align="left">{row.email}</TableCell>
-                  <TableCell align="left">{row.phone}</TableCell>
-                  <TableCell align="left">{row.idProof}</TableCell>
-                  <TableCell align="left">{row.status}</TableCell>
+
+                  <TableCell>
+                    {row.aadhaar ? (
+                      <a href={row.aadhaar} target="_blank" rel="noopener noreferrer">
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {row.passportPhoto ? (
+                      <a href={row.passportPhoto} target="_blank" rel="noopener noreferrer">
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {row.signature ? (
+                      <a href={row.signature} target="_blank" rel="noopener noreferrer">
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+
+                  <TableCell>{row.status}</TableCell>
+
                   <TableCell align="right">
-                    <IconButton color="error" aria-label="delete">
+                    <IconButton color="error">
                       <Iconify icon="eva:trash-2-outline" />
                     </IconButton>
                   </TableCell>
