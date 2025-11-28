@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
@@ -20,6 +20,7 @@ import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import axios from 'axios';
 import { useAuthContext } from 'src/auth/hooks';
 import { DatePicker } from '@mui/x-date-pickers';
+import axiosInstance from 'src/utils/axios';
 
 const ROLES = [
   { value: 'DIRECTOR', label: 'Director' },
@@ -38,6 +39,14 @@ export default function KYCAddSignatoriesForm({
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuthContext(); // eslint-disable-line no-unused-vars
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState(Array(4).fill(''));
+  const otpRefs = useRef([]);
+  const [sessionId, setSessionId] = useState('');
+  const [isEmailOtpSent, setIsEmailOtpSent] = useState(false);
+  const [emailOtp, setEmailOtp] = useState(Array(4).fill(''));
+  const emailOtpRefs = useRef([]);
+  const [emailSessionId, setEmailSessionId] = useState('');
 
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
@@ -199,24 +208,158 @@ export default function KYCAddSignatoriesForm({
   //   }
   // });
   const onSubmit = handleSubmit(async (data) => {
-    // Create object to send back to parent list
+    const enteredOtp = otp.join('');
+
+    if (enteredOtp.length !== 4) {
+      enqueueSnackbar('Enter all 4 digits of OTP', { variant: 'error' });
+      return;
+    }
+
+    // Dummy OTP verification
+    if (enteredOtp !== '1234') {
+      enqueueSnackbar('Invalid OTP (dummy)', { variant: 'error' });
+      return;
+    }
+
+    enqueueSnackbar('OTP Verified (dummy)', { variant: 'success' });
+
     const newSignatory = {
       name: data.name,
       email: data.email,
       phone: data.phoneNumber,
-      din: data.din ?? '—', // If you add DIN later
+      din: data.din ?? '—',
       role: ROLES.find((r) => r.value === data.role)?.label || data.role,
-      idProof: 'Uploaded', // static for now
+      idProof: 'Uploaded',
       status: 'Pending',
     };
 
     console.log('Signatory Submitted (Dummy):', newSignatory);
 
-    // pass to parent
     if (onSuccess) onSuccess(newSignatory);
-
     onClose();
   });
+
+  // const handleSendOtp = async () => {
+  //   const phone = methods.getValues('phoneNumber');
+
+  //   if (!/^[0-9]{10}$/.test(phone)) {
+  //     enqueueSnackbar('Enter valid 10 digit phone number', { variant: 'error' });
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await axiosInstance.post('/auth/send-phone-otp', {
+  //       phone,
+  //       role: 'signatory',
+  //     });
+
+  //     enqueueSnackbar(res.data.message, { variant: 'success' });
+
+  //     setSessionId(res.data.sessionId);
+  //     setIsOtpSent(true);
+  //     setOtp(['', '', '', '']);
+  //   } catch (err) {
+  //     enqueueSnackbar(err?.response?.data?.message || 'Failed to send OTP', {
+  //       variant: 'error',
+  //     });
+  //   }
+  // };
+
+  const handleSendOtp = () => {
+    const phone = methods.getValues('phoneNumber');
+
+    if (!/^[0-9]{10}$/.test(phone)) {
+      enqueueSnackbar('Enter valid 10 digit phone number', { variant: 'error' });
+      return;
+    }
+
+    // Dummy success
+    enqueueSnackbar('OTP Sent Successfully (dummy)', { variant: 'success' });
+
+    setSessionId('dummy-session-id');
+    setIsOtpSent(true);
+    setOtp(['', '', '', '']);
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (/^\d?$/.test(value)) {
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
+
+      if (value && index < 3) otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleSendEmailOtp = () => {
+    const email = methods.getValues('email');
+
+    if (!email || !email.includes('@')) {
+      enqueueSnackbar('Enter a valid email', { variant: 'error' });
+      return;
+    }
+
+    // Dummy email OTP success
+    enqueueSnackbar('Email OTP Sent (dummy)', { variant: 'success' });
+
+    setEmailSessionId('dummy-email-session');
+    setIsEmailOtpSent(true);
+    setEmailOtp(['', '', '', '']);
+  };
+
+  const handleEmailOtpChange = (index, value) => {
+    if (/^\d?$/.test(value)) {
+      const newOtp = [...emailOtp];
+      newOtp[index] = value;
+      setEmailOtp(newOtp);
+
+      if (value && index < 3) emailOtpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const renderOtpBoxes = (
+    <Box display="flex" gap={2}>
+      {otp.map((digit, i) => (
+        <input
+          key={i}
+          value={digit}
+          onChange={(e) => handleOtpChange(i, e.target.value)}
+          ref={(el) => (otpRefs.current[i] = el)}
+          maxLength={1}
+          style={{
+            width: '50px',
+            height: '50px',
+            textAlign: 'center',
+            fontSize: '1.4rem',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+          }}
+        />
+      ))}
+    </Box>
+  );
+
+  const renderEmailOtpBoxes = (
+    <Box display="flex" gap={2}>
+      {emailOtp.map((digit, i) => (
+        <input
+          key={i}
+          value={digit}
+          onChange={(e) => handleEmailOtpChange(i, e.target.value)}
+          ref={(el) => (emailOtpRefs.current[i] = el)}
+          maxLength={1}
+          style={{
+            width: '50px',
+            height: '50px',
+            textAlign: 'center',
+            fontSize: '1.4rem',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+          }}
+        />
+      ))}
+    </Box>
+  );
 
   return (
     <Dialog
@@ -252,7 +395,6 @@ export default function KYCAddSignatoriesForm({
               InputLabelProps={{ shrink: true }}
               disabled={isViewMode}
             />
-            {/* {getErrorMessage('name')} */}
 
             <RHFTextField
               name="email"
@@ -260,18 +402,104 @@ export default function KYCAddSignatoriesForm({
               type="email"
               InputLabelProps={{ shrink: true }}
               disabled={isViewMode}
+              InputProps={{
+                endAdornment: (
+                  <Button
+                    onClick={handleSendEmailOtp}
+                    disabled={isEmailOtpSent || isViewMode}
+                    sx={{
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                      minWidth: '70px',
+                      padding: '4px 8px',
+                    }}
+                  >
+                    {isEmailOtpSent ? 'OTP Sent' : 'Get OTP'}
+                  </Button>
+                ),
+              }}
             />
-            {/* {getErrorMessage('email')} */}
+
+            {isEmailOtpSent && (
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" gap={2}>
+                  {renderEmailOtpBoxes}
+                </Box>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    const enteredOtp = emailOtp.join('');
+
+                    if (enteredOtp.length !== 4) {
+                      enqueueSnackbar('Enter all 4 digits of OTP', { variant: 'error' });
+                      return;
+                    }
+
+                    if (enteredOtp !== '1234') {
+                      enqueueSnackbar('Invalid Email OTP (dummy)', { variant: 'error' });
+                      return;
+                    }
+
+                    enqueueSnackbar('Email Verified (dummy)', { variant: 'success' });
+                  }}
+                >
+                  Verify
+                </Button>
+              </Box>
+            )}
 
             <RHFTextField
               name="phoneNumber"
               label="Phone Number*"
-              type="number"
-              InputLabelProps={{ shrink: true }}
+              type="tel"
               disabled={isViewMode}
-              sx={{ mt: 2 }}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ maxLength: 10 }}
+              InputProps={{
+                endAdornment: (
+                  <Button
+                    onClick={handleSendOtp}
+                    disabled={isOtpSent || isViewMode}
+                    sx={{
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                      minWidth: '70px',
+                      padding: '4px 8px',
+                    }}
+                  >
+                    {isOtpSent ? 'OTP Sent' : 'Get OTP'}
+                  </Button>
+                ),
+              }}
             />
-            {/* {getErrorMessage('phoneNumber')} */}
+
+            {isOtpSent && (
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" gap={2}>
+                  {renderOtpBoxes}
+                </Box>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    const enteredOtp = otp.join('');
+
+                    if (enteredOtp.length !== 4) {
+                      enqueueSnackbar('Enter all 4 digits of OTP', { variant: 'error' });
+                      return;
+                    }
+
+                    if (enteredOtp !== '1234') {
+                      enqueueSnackbar('Invalid OTP (dummy)', { variant: 'error' });
+                      return;
+                    }
+
+                    enqueueSnackbar('OTP Verified (dummy)', { variant: 'success' });
+                  }}
+                >
+                  Verify
+                </Button>
+              </Box>
+            )}
             <Controller
               name="dob"
               control={control}
@@ -311,7 +539,6 @@ export default function KYCAddSignatoriesForm({
                 </MenuItem>
               ))}
             </RHFSelect>
-            {/* {getErrorMessage('role')} */}
 
             {isViewMode ? (
               <>
