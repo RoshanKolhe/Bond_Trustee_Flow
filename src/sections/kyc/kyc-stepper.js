@@ -5,13 +5,9 @@ import { RouterLink } from 'src/routes/components';
 
 export default function KYCStepper({ percent = 0 }) {
   const steps = [
-    { number: 1, lines: ['KYC', 'Verification'] },
-    { number: 2, lines: ['Address', 'Information'] },
-    { number: 3, lines: ['Company', 'Details'] },
-    { number: 4, lines: ['Bank & Demat', 'Details'] },
-    { number: 5, lines: ['Audit', 'Financial'] },
-    { number: 6, lines: ['Signatory'] },
-    { number: 7, lines: ['Review'] },
+    { number: 1, lines: ['Company', 'Details'] },
+    { number: 2, lines: ['Bank', 'Details'] },
+    { number: 3, lines: ['Signatory'] },
   ];
 
   // Color logic based on percent
@@ -28,13 +24,9 @@ export default function KYCStepper({ percent = 0 }) {
   const currentStep = window.location.pathname;
 
   const getActiveStep = () => {
-    if (currentStep.includes('basic-info')) return 1;
-    if (currentStep.includes('address-info')) return 2;
-    if (currentStep.includes('company-details')) return 3;
-    if (currentStep.includes('bank-details')) return 4;
-    if (currentStep.includes('audited-financial')) return 5;
-    if (currentStep.includes('signatories')) return 6;
-    if (currentStep.includes('review-and-submit')) return 7;
+    if (currentStep.includes('company-details')) return 1;
+    if (currentStep.includes('bank-details')) return 2;
+    if (currentStep.includes('signatories')) return 3;
     return 1;
   };
 
@@ -43,19 +35,11 @@ export default function KYCStepper({ percent = 0 }) {
   const getPath = (stepNumber) => {
     switch (stepNumber) {
       case 1:
-        return '/kyc/basic-info';
+        return '/trustee-kyc/company-details';
       case 2:
-        return '/kyc/address-info';
+        return '/trustee-kyc/bank-details';
       case 3:
-        return '/kyc/company-details';
-      case 4:
-        return '/kyc/bank-details';
-      case 5:
-        return '/kyc/audited-financial';
-      case 6:
-        return '/kyc/signatories';
-      case 7:
-        return '/kyc/review-and-submit';
+        return '/trustee-kyc/signatories';
       default:
         return null;
     }

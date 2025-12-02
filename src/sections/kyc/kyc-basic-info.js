@@ -29,7 +29,7 @@ import dayjs from 'dayjs';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import YupErrorMessage from 'src/components/error-field/yup-error-messages';
 import { useGetSectors } from 'src/api/sector';
-import { useGetEntityTypes } from 'src/api/entityType';
+import { useGetTrusteeEntityTypes } from 'src/api/entityType';
 import { paths } from 'src/routes/paths';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useRouter } from 'src/routes/hook';
@@ -40,32 +40,16 @@ export default function KYCBasicInfo() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const router = useRouter();
-  const passwordToggle = useBoolean();
 
   const [panExtractionStatus, setPanExtractionStatus] = useState('idle'); // 'idle' | 'success' | 'failed'
   const [extractedPanDetails, setExtractedPanDetails] = useState(null);
   const [uploadedPanFile, setUploadedPanFile] = useState(null);
+  const isPanUploaded = Boolean(uploadedPanFile); 
   // State to store mapped API values
   const [sectorOptions, setSectorOptions] = useState([]);
   const [entityOptions, setEntityOptions] = useState([]);
   const { Sectors, SectorsEmpty } = useGetSectors();
-  const { EntityTypes, EntityTypesEmpty } = useGetEntityTypes();
-
-  useEffect(() => {
-    if (Sectors && !SectorsEmpty) {
-      setSectorOptions(Sectors);
-    } else {
-      setSectorOptions([]);
-    }
-  }, [Sectors, SectorsEmpty]);
-
-  useEffect(() => {
-    if (EntityTypes && !EntityTypesEmpty) {
-      setEntityOptions(EntityTypes);
-    } else {
-      setEntityOptions([]);
-    }
-  }, [EntityTypes, EntityTypesEmpty]);
+  const { EntityTypes, EntityTypesEmpty } = useGetTrusteeEntityTypes();
 
   const [humanInteraction, setHumanInteraction] = useState({
     companyName: false,
@@ -78,7 +62,8 @@ export default function KYCBasicInfo() {
     panNumber: false,
     dateOfBirth: false,
     panHoldersName: false,
-    // other fields if you want to track
+    sebiRegistrationNumber: false,
+    sebiValidityDate: false,
   });
 
   const handleHumanInteraction = (fieldName) => {
@@ -96,6 +81,8 @@ export default function KYCBasicInfo() {
     gstin: Yup.string().required('GSTIN is required'),
     dateOfIncorporation: Yup.date().required('Date of Incorporation is required'),
     msmeUdyamRegistrationNo: Yup.string().required('MSME Udyam Registration No is required'),
+    sebiRegistrationNumber: Yup.string().required('SEBI Registration Number is required'),
+    sebiValidityDate: Yup.date().required('SEBI Validity Date is required'),
     city: Yup.string().required('City is required'),
     state: Yup.string().required('State is required'),
     country: Yup.string().required('Country is required'),
@@ -103,18 +90,7 @@ export default function KYCBasicInfo() {
     panNumber: Yup.string().required('PAN Number is required'),
     dateOfBirth: Yup.date().required('Date Of Birth is required'),
     panHoldersName: Yup.string().required("PAN Holder's Name is required"),
-    password: Yup.string()
-      .required('Password is required')
-      .min(8, 'Password must be at least 8 characters')
-      .matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-      ),
-    confirmPassword: Yup.string()
-      .required('Please confirm your password')
-      .oneOf([Yup.ref('password'), null], 'Passwords must match'),
     companyEntityTypeId: Yup.string().required('Entity Type is required'),
-    companySectorTypeId: Yup.string().required('Sector is required'),
   });
 
   const defaultValues = useMemo(
@@ -124,6 +100,8 @@ export default function KYCBasicInfo() {
       gstin: '',
       dateOfIncorporation: null,
       msmeUdyamRegistrationNo: '',
+      sebiRegistrationNumber: '',
+      sebiValidityDate: null,
       city: '',
       state: '',
       country: 'India',
@@ -131,9 +109,8 @@ export default function KYCBasicInfo() {
       panNumber: '',
       dateOfBirth: null,
       panHoldersName: '',
-      password: '',
-      confirmPassword: '',
       panCardDocumentId: '',
+      companyEntityTypeId: '',
       humanInteraction: { ...humanInteraction },
     }),
     [humanInteraction]
@@ -153,8 +130,6 @@ export default function KYCBasicInfo() {
     watch,
     formState: { isSubmitting, errors },
   } = methods;
-
-  const allValues = watch();
 
   const handlePanUpload = async (file) => {
     try {
@@ -179,11 +154,11 @@ export default function KYCBasicInfo() {
       const panData = extractRes?.data?.data || extractRes?.data;
 
       // Adjust these keys according to your actual API response
-      const panNumberFromApi = panData?.panNumber || panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.dateOfBirth || panData?.extractedDateOfBirth || '';
-      const companyNameFromApi = panData?.companyName || panData?.extractedCompanyName || '';
+      const panNumberFromApi = panData?.extractedPanNumber || '';
+      const dobFromApi = panData?.extractedDateOfBirth || '';
+      const panHolderNameFromApi = panData?.extractedPanHolderName || '';
 
-      if (!panNumberFromApi && !dobFromApi && !companyNameFromApi) {
+      if (!panNumberFromApi && !dobFromApi && !panHolderNameFromApi) {
         // Treat as failure if nothing useful came back
         setPanExtractionStatus('failed');
         enqueueSnackbar(
@@ -194,8 +169,8 @@ export default function KYCBasicInfo() {
       }
 
       // Fill form values from extraction
-      if (companyNameFromApi) {
-        setValue('companyName', companyNameFromApi, {
+      if (panHolderNameFromApi) {
+        setValue('companyName', panHolderNameFromApi, {
           shouldValidate: true,
           shouldDirty: true,
         });
@@ -217,7 +192,7 @@ export default function KYCBasicInfo() {
 
       // Save extracted details in state for final payload
       const extracted = {
-        extractedCompanyName: companyNameFromApi || '',
+        extractedTrusteeName: panHolderNameFromApi || '',
         extractedPanNumber: panNumberFromApi || '',
         extractedDateOfBirth: dobFromApi || '',
       };
@@ -236,40 +211,8 @@ export default function KYCBasicInfo() {
     }
   };
 
-  // Percent calculation (unchanged except names)
-  const requiredFields = [
-    'cin',
-    'companyName',
-    'gstin',
-    'dateOfIncorporation',
-    'msmeUdyamRegistrationNo',
-    'city',
-    'state',
-    'country',
-    'panFile',
-    'panNumber',
-    'dateOfBirth',
-    'panHoldersName',
-  ];
-
-  const calculatePercent = () => {
-    let validCount = 0;
-
-    requiredFields.forEach((field) => {
-      const value = allValues[field];
-      const hasError = !!errors[field];
-
-      if (value && !hasError) {
-        validCount++;
-      }
-    });
-
-    return Math.round((validCount / requiredFields.length) * 100);
-  };
-
   const onSubmit = handleSubmit(async (formData) => {
     try {
-      // sessionId from storage (adjust key if needed)
       const sessionId = localStorage.getItem('sessionId') || '';
 
       const dateOfIncorporationStr = formData.dateOfIncorporation
@@ -278,113 +221,102 @@ export default function KYCBasicInfo() {
 
       const dobStr = formData.dateOfBirth ? dayjs(formData.dateOfBirth).format('YYYY-MM-DD') : '';
 
-      const companyName = formData.companyName || '';
-      const panNumber = formData.panNumber || '';
+      // Detect if user changed PAN fields manually
+      let humanEdited = false;
 
-      // Determine if user edited PAN-related fields vs extracted
-      let userEditedPanFields = false;
-
-      if (extractedPanDetails && panExtractionStatus === 'success') {
-        const extractedDob = extractedPanDetails.extractedDateOfBirth || '';
-        userEditedPanFields =
-          extractedPanDetails.extractedCompanyName !== companyName ||
-          extractedPanDetails.extractedPanNumber !== panNumber ||
-          extractedDob !== dobStr;
+      if (extractedPanDetails) {
+        humanEdited =
+          extractedPanDetails.extractedTrusteeName !== formData.panHoldersName ||
+          extractedPanDetails.extractedPanNumber !== formData.panNumber ||
+          extractedPanDetails.extractedDateOfBirth !== dobStr;
       }
 
-      // Build extractedPanDetails & submittedPanDetails and humanInteraction
-      let extractedPanPayload = null;
-      let submittedPanPayload = null;
-      let humanInteractionFlag = false;
-
-      if (panExtractionStatus === 'success' && extractedPanDetails) {
-        if (userEditedPanFields) {
-          // Case: PAN successfully extracted + user CHANGED values manually
-          extractedPanPayload = { ...extractedPanDetails };
-          submittedPanPayload = {
-            submittedCompanyName: companyName,
-            submittedPanNumber: panNumber,
-            submittedDateOfBirth: dobStr,
+      // Build extracted PAN object
+      const extractedPan = extractedPanDetails
+        ? {
+            extractedTrusteeName: extractedPanDetails.extractedCompanyName || '',
+            extractedPanNumber: extractedPanDetails.extractedPanNumber || '',
+            extractedDateOfBirth: extractedPanDetails.extractedDateOfBirth || '',
+          }
+        : {
+            extractedTrusteeName: formData.panHoldersName,
+            extractedPanNumber: formData.panNumber,
+            extractedDateOfBirth: dobStr,
           };
-          humanInteractionFlag = true;
-        } else {
-          extractedPanPayload = { ...extractedPanDetails };
-          submittedPanPayload = null;
-          humanInteractionFlag = false;
-        }
-      } else {
-        extractedPanPayload = {
-          extractedCompanyName: companyName,
-          extractedPanNumber: panNumber,
-          extractedDateOfBirth: dobStr,
-        };
-        submittedPanPayload = {
-          submittedCompanyName: companyName,
-          submittedPanNumber: panNumber,
-          submittedDateOfBirth: dobStr,
-        };
-        humanInteractionFlag = true;
-      }
 
+      // Build submitted PAN object
+      const submittedPan = humanEdited
+        ? {
+            submittedTrusteeName: formData.panHoldersName,
+            submittedPanNumber: formData.panNumber,
+            submittedDateOfBirth: dobStr,
+          }
+        : null;
+
+      // FINAL API PAYLOAD — 100% MATCHES THE API FORMAT YOU GAVE
       const payload = {
         sessionId,
-        password: formData.password || '',
-        companyName: companyName,
-        CIN: formData.cin || '',
-        GSTIN: formData.gstin || '',
-        udyamRegistrationNumber: formData.msmeUdyamRegistrationNo || '',
-        dateOfIncorporation: dateOfIncorporationStr,
-        cityOfIncorporation: formData.city || '',
-        stateOfIncorporation: formData.state || '',
-        countryOfIncorporation: formData.country || '',
-        humanInteraction: humanInteractionFlag,
-        extractedPanDetails: extractedPanPayload,
-        submittedPanDetails: submittedPanPayload,
-        panCardDocumentId: formData.panCardDocumentId || '',
+        legalEntityName: formData.companyName,
+        CIN: formData.cin,
+        GSTIN: formData.gstin,
+        udyamRegistrationNumber: formData.msmeUdyamRegistrationNo,
 
-        companySectorTypeId: formData.companySectorTypeId,
-        companyEntityTypeId: formData.companyEntityTypeId,
+        dateOfIncorporation: dateOfIncorporationStr,
+        sebiRegistrationNumber: formData.sebiRegistrationNumber,
+        sebiValidityDate: formData.sebiValidityDate
+          ? dayjs(formData.sebiValidityDate).format('YYYY-MM-DD')
+          : '',
+
+        cityOfIncorporation: formData.city,
+        stateOfIncorporation: formData.state,
+        countryOfIncorporation: formData.country,
+
+        humanInteraction: humanEdited ? true : false,
+
+        extractedPanDetails: extractedPan,
+        submittedPanDetails: submittedPan,
+
+        panCardDocumentId: formData.panCardDocumentId,
+        trusteeEntityTypesId: formData.companyEntityTypeId,
       };
 
-      console.log('Submitting payload to /auth/company-registration:', payload);
+      console.log('FINAL Trustee Registration Payload:', payload);
 
-      const response = await axiosInstance.post('/auth/company-registration', payload);
+      const response = await axiosInstance.post('/auth/trustee-registration', payload);
 
       if (response?.data?.success) {
-        enqueueSnackbar(response.data.message || 'Registration submitted successfully', {
+        const usersId = response?.data?.usersId;
+
+        // ✅ Store it so next page can access it
+        if (usersId) {
+          sessionStorage.setItem('trustee_user_id', usersId);
+        } else {
+          console.warn('No usersId found in trustee-registration response');
+        }
+        enqueueSnackbar(response.data.message || 'Trustee Registration Successful', {
           variant: 'success',
         });
 
-        // Store returned status
-        localStorage.setItem('kycStatus', response.data.kycStatus);
-
-        // Redirect based on KYC Status 
-        if (response.data.kycStatus === 0) {
-          navigate(paths.KYCPending);
-        } else if (response.data.kycStatus === 1) {
-          navigate(paths.KYCSucessfull);
-        }
-        router.push(paths.kycCompanyDetails);
         reset();
+        router.push(paths.kycCompanyDetails);
       } else {
         throw new Error(response?.data?.message || 'Registration failed');
       }
-
-      reset();
     } catch (error) {
       console.error(error);
-      enqueueSnackbar(
-        typeof error === 'string'
-          ? error
-          : error?.response?.data?.message || error?.message || 'Error occurred',
-        {
-          variant: 'error',
-        }
-      );
+      enqueueSnackbar(error?.response?.data?.message || error.message || 'Something went wrong', {
+        variant: 'error',
+      });
     }
   });
 
-  // ----------------------------------------------------------------------
+  useEffect(() => {
+    if (EntityTypes && !EntityTypesEmpty) {
+      setEntityOptions(EntityTypes);
+    } else {
+      setEntityOptions([]);
+    }
+  }, [EntityTypes, EntityTypesEmpty]);
 
   return (
     <Container>
@@ -403,69 +335,10 @@ export default function KYCBasicInfo() {
           }}
         >
           <Grid container spacing={3} sx={{ py: 4 }}>
-            {/* Password Field */}
-            <Grid xs={12} md={6}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:lock-password-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Set Your Password*
-                  </Box>
-                </Box>
-                <RHFTextField
-                  name="password"
-                  type={passwordToggle.value ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Enter your password"
-                  fullWidth
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={passwordToggle.onToggle} edge="end">
-                          <Iconify
-                            icon={passwordToggle.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'}
-                          />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-            </Grid>
-
-            {/* Confirm Password Field */}
-            <Grid xs={12} md={6}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:lock-password-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Confirm Password*
-                  </Box>
-                </Box>
-                <RHFTextField
-                  name="confirmPassword"
-                  type={passwordToggle.value ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Confirm your password"
-                  fullWidth
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={passwordToggle.onToggle} edge="end">
-                          <Iconify
-                            icon={passwordToggle.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'}
-                          />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-            </Grid>
             <Grid xs={12} md={6} order={{ xs: 2, md: 1 }}>
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:user-rounded-bold" width={24} />
+                  <Iconify icon="solar:card-bold" width={24} />
                   <Box component="span" sx={{ fontWeight: 600 }}>
                     CIN*
                   </Box>
@@ -485,10 +358,14 @@ export default function KYCBasicInfo() {
                           fontWeight: 600,
                           borderRadius: '6px',
                           ml: 1,
+                          minHeight: '32px',
+                          lineHeight: 1,
+                          px: 2,
                           '&:hover': { bgcolor: '#00328A' },
                         }}
                         onClick={async () => {
                           const cinValue = getValues('cin');
+
                           if (!cinValue) {
                             enqueueSnackbar('Please enter a CIN before fetching.', {
                               variant: 'warning',
@@ -497,64 +374,66 @@ export default function KYCBasicInfo() {
                           }
 
                           try {
-                            const response = await axiosInstance.get(
-                              `/api/kyc/trustee_kyc/company-info/cin/${cinValue}/`
-                            );
+                            const response = await axiosInstance.post('/extraction/company-info', {
+                              CIN: cinValue,
+                            });
 
-                            const data = response.data.data;
+                            const data = response?.data?.data;
+
                             if (response.data.success && data) {
-                              // Set all the form fields from the response without triggering human interaction
-                              setValue('companyName', data.company_name || '', {
+                              // ⭐ Correct mapping based on your API response
+
+                              setValue('companyName', data.companyName || '', {
                                 shouldValidate: true,
                                 shouldDirty: true,
                               });
+
                               setValue('gstin', data.gstin || '', {
                                 shouldValidate: true,
                                 shouldDirty: true,
                               });
+
                               setValue(
                                 'dateOfIncorporation',
-                                data.date_of_incorporation
-                                  ? new Date(data.date_of_incorporation)
+                                data.dateOfIncorporation
+                                  ? new Date(data.dateOfIncorporation)
                                   : null,
                                 { shouldValidate: true, shouldDirty: true }
                               );
-                              setValue('city', data.city_of_incorporation || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              setValue('state', data.state_of_incorporation || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              setValue('country', data.country_of_incorporation || 'India', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              setValue('sector', data.sector || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              setValue('entityType', data.entity_type || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              setValue('panNumber', data.company_pan_number || '', {
+
+                              setValue('city', data.cityOfIncorporation || '', {
                                 shouldValidate: true,
                                 shouldDirty: true,
                               });
 
-                              enqueueSnackbar('CIN data fetched successfully', {
+                              setValue('state', data.stateOfIncorporation || '', {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+
+                              setValue('country', data.countryOfIncorporation || 'India', {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+
+                              setValue('panNumber', data.companyPanNumber || '', {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+
+                              enqueueSnackbar('CIN details extracted successfully', {
                                 variant: 'success',
                               });
                             } else {
-                              throw new Error(response.data.message || 'Failed to fetch CIN data');
+                              throw new Error(
+                                response.data.message || 'Failed to extract CIN details'
+                              );
                             }
                           } catch (error) {
-                            console.error('Error fetching CIN:', error);
+                            console.error('Error extracting CIN:', error);
                             enqueueSnackbar(
-                              error.response?.data?.message ||
-                                'Failed to fetch CIN data. Please check CIN or try again.',
+                              error?.response?.data?.message ||
+                                'Failed to fetch CIN data. Please check CIN and try again.',
                               { variant: 'error' }
                             );
                           }
@@ -570,7 +449,7 @@ export default function KYCBasicInfo() {
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Iconify icon="solar:buildings-bold" width={24} />
                   <Box component="span" sx={{ fontWeight: 600 }}>
-                    Company Name*
+                    Legal Entity Name* (As per Adhar)
                   </Box>
                 </Box>
                 <RHFTextField
@@ -581,7 +460,7 @@ export default function KYCBasicInfo() {
               </Box>
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:percentage-circle-bold" width={24} />
+                  <Iconify icon="material-symbols:percent" width={24} />
                   <Box component="span" sx={{ fontWeight: 600 }}>
                     GSTIN*
                   </Box>
@@ -619,6 +498,19 @@ export default function KYCBasicInfo() {
 
           <Grid container spacing={3}>
             <Grid xs={12} md={6}>
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Iconify icon="solar:shield-bold" width={24} />
+                  <Box component="span" sx={{ fontWeight: 600 }}>
+                    SEBI Registration Number*
+                  </Box>
+                </Box>
+                <RHFTextField
+                  name="sebiRegistrationNumber"
+                  placeholder="Enter your Registration Number"
+                />
+              </Box>
+
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Iconify icon="solar:calendar-bold" width={24} />
@@ -660,12 +552,41 @@ export default function KYCBasicInfo() {
                 <RHFTextField
                   name="msmeUdyamRegistrationNo"
                   placeholder="Enter your MSME/Udyam Registration No."
-                  // onFocus={() => handleHumanInteraction('msmeUdyamRegistrationNo')}
                 />
               </Box>
             </Grid>
             <Grid xs={12} md={6}>
               <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Iconify icon="solar:calendar-bold" width={24} />
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      SEBI Validity Date*
+                    </Box>
+                  </Box>
+                  <Controller
+                    name="sebiValidityDate"
+                    control={control}
+                    render={({ field, fieldState: { error } }) => (
+                      <DatePicker
+                        value={field.value}
+                        onChange={(newValue) => {
+                          field.onChange(newValue);
+                          handleHumanInteraction('sebiValidityDate');
+                        }}
+                        onOpen={() => handleHumanInteraction('sebiValidityDate')}
+                        format="dd-MM-yyyy"
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            error: !!error,
+                            helperText: error?.message,
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Iconify icon="solar:map-point-bold" width={24} />
                   <Box component="span" sx={{ fontWeight: 600 }}>
@@ -720,40 +641,22 @@ export default function KYCBasicInfo() {
                 </Stack>
               </Box>
               <Box sx={{ mb: 3 }}>
-                <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Iconify icon="solar:buildings-2-bold" width={24} />
-                      <Box component="span" sx={{ fontWeight: 600 }}>
-                        Entity Type*
-                      </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Iconify icon="solar:buildings-2-bold" width={24} />
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      Entity Type*
                     </Box>
-                    <RHFSelect name="companyEntityTypeId">
-                      <MenuItem value="">Select Entity Type</MenuItem>
-                      {entityOptions.map((item) => (
-                        <MenuItem key={item.id} value={item.id}>
-                          {item.label}
-                        </MenuItem>
-                      ))}
-                    </RHFSelect>
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Iconify icon="solar:chart-2-bold" width={24} />
-                      <Box component="span" sx={{ fontWeight: 600 }}>
-                        Sector*
-                      </Box>
-                    </Box>
-                    <RHFSelect name="companySectorTypeId">
-                      <MenuItem value="">Select Entity Type</MenuItem>
-                      {sectorOptions.map((item) => (
-                        <MenuItem key={item.id} value={item.id}>
-                          {item.label}
-                        </MenuItem>
-                      ))}
-                    </RHFSelect>
-                  </Box>
-                </Stack>
+                  <RHFSelect name="companyEntityTypeId">
+                    <MenuItem value="">Select Entity Type</MenuItem>
+                    {entityOptions.map((item) => (
+                      <MenuItem key={item.id} value={item.id}>
+                        {item.label}
+                      </MenuItem>
+                    ))}
+                  </RHFSelect>
+                </Box>
               </Box>
             </Grid>
           </Grid>
@@ -795,6 +698,7 @@ export default function KYCBasicInfo() {
               <RHFTextField
                 name="panNumber"
                 placeholder="Your PAN Number"
+                disabled={!isPanUploaded} 
                 onFocus={() => handleHumanInteraction('panNumber')}
               />
             </Grid>
@@ -813,6 +717,7 @@ export default function KYCBasicInfo() {
                 render={({ field, fieldState: { error } }) => (
                   <DatePicker
                     value={field.value}
+                    disabled={!isPanUploaded} 
                     onChange={(newValue) => {
                       field.onChange(newValue);
                       handleHumanInteraction('dateOfBirth');
@@ -843,6 +748,7 @@ export default function KYCBasicInfo() {
               <RHFTextField
                 name="panHoldersName"
                 placeholder="Enter Name as per PAN"
+                disabled={!isPanUploaded} 
                 onFocus={() => handleHumanInteraction('panHoldersName')}
               />
             </Grid>

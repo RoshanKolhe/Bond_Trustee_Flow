@@ -28,6 +28,8 @@ import { useRouter } from 'src/routes/hook';
 import KYCStepper from './kyc-stepper';
 import { yupResolver } from '@hookform/resolvers/yup';
 import YupErrorMessage from 'src/components/error-field/yup-error-messages';
+import { enqueueSnackbar } from 'notistack';
+import axiosInstance from 'src/utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -47,52 +49,14 @@ export default function KYCCompanyDetails() {
     moaAoa: Yup.mixed().required('Please upload the selected document (MoA or AoA)'),
   });
 
-  useEffect(() => {
-    const run = async () => {
-      setLoadingDocs(true);
-      try {
-        const accessToken = sessionStorage.getItem('accessToken');
-        const res = await fetch(`${base}/api/kyc/issuer_kyc/companies/documents/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        });
-        if (!res.ok) {
-          setDocs([]);
-          setDocSummary(null);
-          return;
-        }
-        let json = {};
-        try {
-          json = await res.json();
-        } catch (e) {
-          json = {};
-        }
-        const data = json?.data ?? {};
-        setDocs(Array.isArray(data.documents) ? data.documents : []);
-        setDocSummary(data.summary ?? null);
-      } catch (e) {
-        setDocs([]);
-        setDocSummary(null);
-      } finally {
-        setLoadingDocs(false);
-      }
-    };
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId, base]);
-
   const methods = useForm({
     resolver: yupResolver(CompanyDetailSchema),
     defaultValues: {
       certificateOfIncorporation: null,
       moaAoa: null,
-      msmeUdyamCertificate: null,
-      importExportCertificate: null,
+      sebiCertificate: null,
+      gstCertificate: null,
       moaAoaType: 'moa',
-      msmeUdyamAvailability: 'msme',
     },
   });
   const { setValue, control } = methods;
@@ -130,136 +94,99 @@ export default function KYCCompanyDetails() {
   } = methods;
 
   const moaAoaType = useWatch({ control, name: 'moaAoaType' });
-  const msmeUdyamAvailability = useWatch({ control, name: 'msmeUdyamAvailability' });
 
-  // const onSubmit = handleSubmit(async (form) => {
-  //   const base = process.env.REACT_APP_HOST_API || '';
-  //   const companyId = sessionStorage.getItem('company_information_id');
-  //   const bulkUrl = `${base}/api/kyc/issuer_kyc/companies/documents/bulkupload/`;
+  const DOCUMENT_MAP = {
+    certificate_of_incorporation: '091b9240-d614-4b88-86ca-29e21a47c504',
+    moa: '63f4d91c-5b39-4e85-9941-48f27376f1dd',
+    aoa: '5dc2ef67-82c7-41ea-849f-362e61a4782a',
+    gst_certificate: 'ae2721a3-f3af-4dc8-8b64-0b1233b03523',
+    sebi_registration_certificate: 'ff7575eb-e42d-4677-9088-456d7b36109f',
+  };
 
-  //   const accessToken = sessionStorage.getItem('accessToken');
-  //   const upper = (v) => (typeof v === 'string' ? v.toUpperCase() : '');
-
-  //   // Helper to find existing doc by canonical name
-  //   const findDoc = (name) => (docs || []).find((d) => d.document_name === name);
-
-  //   // Collect PUT tasks for files replacing existing docs
-  //   const putTasks = [];
-
-  //   const tryQueuePut = (file, existingDoc) => {
-  //     if (!file || !existingDoc?.document_id) return false;
-  //     const putFd = new FormData();
-  //     putFd.append('file', file);
-  //     const url = `${base}/api/kyc/issuer_kyc/companies/documents/${existingDoc.document_id}/`;
-  //     putTasks.push(
-  //       fetch(url, {
-  //         method: 'PUT',
-  //         headers: {
-  //           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  //         },
-  //         body: putFd,
-  //       })
-  //     );
-  //     return true;
-  //   };
-
-  //   // Determine which to PUT vs keep for bulk POST
-  //   const bulkFd = new FormData();
-
-  //   // Certificate of Incorporation
-  //   const exCert = findDoc('CERTIFICATE_INC');
-  //   if (!tryQueuePut(form.certificateOfIncorporation, exCert)) {
-  //     if (form.certificateOfIncorporation)
-  //       bulkFd.append('certificate_of_incorporation', form.certificateOfIncorporation);
-  //   }
-
-  //   // MoA/AoA combined upload field
-  //   const exMoa = findDoc('MOA') || findDoc('AOA');
-  //   if (!tryQueuePut(form.moaAoa, exMoa)) {
-  //     if (form.moaAoa) {
-  //       bulkFd.append('moa_aoa_file', form.moaAoa);
-  //       if (form.moaAoaType) bulkFd.append('moa_aoa_type', upper(form.moaAoaType));
-  //     }
-  //   }
-
-  //   // MSME/Udyam combined field
-  //   const exMsme = findDoc('MSME') || findDoc('UDYAM');
-  //   if (!tryQueuePut(form.msmeUdyamCertificate, exMsme)) {
-  //     if (form.msmeUdyamCertificate) {
-  //       bulkFd.append('msme_udyam_file', form.msmeUdyamCertificate);
-  //       if (form.msmeUdyamAvailability)
-  //         bulkFd.append('msme_udyam_type', upper(form.msmeUdyamAvailability));
-  //     }
-  //   }
-
-  //   // IEC
-  //   const exIec = findDoc('IEC');
-  //   if (!tryQueuePut(form.importExportCertificate, exIec)) {
-  //     if (form.importExportCertificate)
-  //       bulkFd.append('import_export_certificate', form.importExportCertificate);
-  //   }
-
-  //   try {
-  //     // Execute PUT updates first (if any)
-  //     if (putTasks.length > 0) {
-  //       const putResponses = await Promise.all(putTasks);
-  //       for (const r of putResponses) {
-  //         if (!r.ok) {
-  //           const t = await r.text();
-  //           throw new Error(t || 'Failed to update existing document');
-  //         }
-  //       }
-  //     }
-
-  //     // If there are files to POST in bulk, do it
-  //     const hasBulkFiles = Array.from(bulkFd.keys()).some((k) =>
-  //       [
-  //         'certificate_of_incorporation',
-  //         'moa_aoa_file',
-  //         'msme_udyam_file',
-  //         'import_export_certificate',
-  //       ].includes(k)
-  //     );
-  //     if (hasBulkFiles) {
-  //       const res = await fetch(bulkUrl, {
-  //         method: 'POST',
-  //         headers: {
-  //           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  //         },
-  //         body: bulkFd,
-  //       });
-  //       if (!res.ok) {
-  //         const txt = await res.text();
-  //         throw new Error(txt || 'Failed to upload documents');
-  //       }
-  //     }
-
-  //     // Navigate to next step on success
-  //     router.push(paths.KYCBankDetails);
-  //   } catch (err) {
-  //     // eslint-disable-next-line no-console
-  //     console.error(err);
-  //   }
-  // });
   const onSubmit = handleSubmit(async (form) => {
-    console.log('🚀 Final Submitted Form Data:', {
-      certificateOfIncorporation: form.certificateOfIncorporation,
-      moaAoaType: form.moaAoaType,
-      moaAoa: form.moaAoa,
-      msmeUdyamCertificate: form.msmeUdyamCertificate,
-      importExportCertificate: form.importExportCertificate,
-      msmeUdyamAvailability: form.msmeUdyamAvailability,
-    });
+    try {
+      const usersId = sessionStorage.getItem('trustee_user_id');
 
-    // You can move to next page if needed
-    router.push(paths.KYCBankDetails);
+      if (!usersId) {
+        enqueueSnackbar('User ID not found in session!', { variant: 'error' });
+        return;
+      }
+
+      // 2️⃣ Map fields → document values
+      const uploadList = [
+        {
+          field: 'certificateOfIncorporation',
+          value: 'certificate_of_incorporation',
+        },
+        {
+          field: 'moaAoa',
+          value: form.moaAoaType === 'moa' ? 'moa' : 'aoa',
+        },
+        {
+          field: 'gstCertificate',
+          value: 'gst_certificate',
+        },
+        {
+          field: 'sebiCertificate',
+          value: 'sebi_registration_certificate',
+        },
+      ];
+
+      const uploadedDocuments = [];
+
+      for (const item of uploadList) {
+        const file = form[item.field];
+        if (!file) continue;
+
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await axiosInstance.post('/files', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        const uploaded = res?.data?.files?.[0];
+
+        if (!uploaded?.id) {
+          enqueueSnackbar(`Upload failed for ${item.field}`, { variant: 'error' });
+          continue;
+        }
+
+        uploadedDocuments.push({
+          documentsId: DOCUMENT_MAP[item.value],
+          documentsFileId: uploaded.id,
+        });
+      }
+      const payload = {
+        usersId,
+        documents: uploadedDocuments,
+      };
+
+      console.log('📤 FINAL PAYLOAD:', payload);
+
+      const final = await axiosInstance.post('/trustee-profiles/kyc-upload-documents', payload);
+
+      if (final?.data?.success) {
+        enqueueSnackbar('Documents uploaded successfully!', {
+          variant: 'success',
+        });
+        router.push(paths.KYCBankDetails);
+      } else {
+        enqueueSnackbar(final?.data?.message || 'Upload failed', {
+          variant: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('❌ ERROR uploading documents:', error);
+      enqueueSnackbar('Something went wrong', { variant: 'error' });
+    }
   });
 
   const requiredFields = [
-    'certificateOfIncorporation', // required by Yup
-    'moaAoa', // file
-    'msmeUdyamCertificate', // file
-    'importExportCertificate', // IEC file (optional in UI but still part of progress)
+    'certificateOfIncorporation',
+    'moaAoa',
+    'sebiCertificate',
+    'gstCertificate',
   ];
 
   const allValues = methods.watch();
@@ -273,9 +200,6 @@ export default function KYCCompanyDetails() {
 
       const hasError = !!errors[field];
 
-      // VALID when:
-      //   - field is not empty
-      //   - AND no validation error from Yup
       if (value && !hasError) {
         validCount++;
       }
@@ -285,6 +209,43 @@ export default function KYCCompanyDetails() {
   };
 
   const percent = calculatePercent();
+
+  // useEffect(() => {
+  //   const run = async () => {
+  //     setLoadingDocs(true);
+  //     try {
+  //       const accessToken = sessionStorage.getItem('accessToken');
+  //       const res = await fetch(`${base}/api/kyc/issuer_kyc/companies/documents/`, {
+  //         method: 'GET',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  //         },
+  //       });
+  //       if (!res.ok) {
+  //         setDocs([]);
+  //         setDocSummary(null);
+  //         return;
+  //       }
+  //       let json = {};
+  //       try {
+  //         json = await res.json();
+  //       } catch (e) {
+  //         json = {};
+  //       }
+  //       const data = json?.data ?? {};
+  //       setDocs(Array.isArray(data.documents) ? data.documents : []);
+  //       setDocSummary(data.summary ?? null);
+  //     } catch (e) {
+  //       setDocs([]);
+  //       setDocSummary(null);
+  //     } finally {
+  //       setLoadingDocs(false);
+  //     }
+  //   };
+  //   run();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [companyId, base]);
 
   return (
     <Container>
@@ -345,8 +306,8 @@ export default function KYCCompanyDetails() {
               sx={{ width: '100%', maxWidth: 400 }}
             >
               <MenuItem value="">Select</MenuItem>
-              <MenuItem value="moa">MoA - Memorandum of Association</MenuItem>
-              <MenuItem value="aoa">AoA - Articles of Association</MenuItem>
+              <MenuItem value="moa">MoA - Memorandum of Association*</MenuItem>
+              <MenuItem value="aoa">AoA - Articles of Association*</MenuItem>
               {/* <MenuItem value="both">Both (MoA + AoA Combined)</MenuItem> */}
             </RHFSelect>
             {(() => {
@@ -388,7 +349,7 @@ export default function KYCCompanyDetails() {
             <YupErrorMessage name="moaAoa" />
 
             <RHFFileUploadBox
-              name="msmeUdyamCertificate"
+              name="sebiCertificate"
               label="SEBI"
               icon="mdi:briefcase-outline"
               color="#1e88e5"
@@ -398,7 +359,7 @@ export default function KYCCompanyDetails() {
             />
 
             <RHFFileUploadBox
-              name="importExportCertificate"
+              name="gstCertificate"
               label="GST"
               icon="mdi:earth"
               color="#1e88e5"

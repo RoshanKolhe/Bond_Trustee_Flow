@@ -22,6 +22,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import { useRouter } from 'src/routes/hook';
 import KYCStepper from './kyc-stepper';
+import { enqueueSnackbar } from 'notistack';
+import axiosInstance from 'src/utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -34,63 +36,110 @@ export default function KYCBankDetails() {
     addressProof: Yup.mixed().required('Address proof is required'),
     bankName: Yup.string().required('Bank Name is required'),
     branchName: Yup.string().required('Branch Name is required'),
-    accountNumber: Yup.string().required('Account Number is required'),
+    accountNumber: Yup.number().required('Account Number is required'),
     ifscCode: Yup.string().required('IFSC Code is required'),
     accountType: Yup.string().required('Account Type is required'),
+    accountHolderName: Yup.string().required('Account Holder Name is required'),
   });
 
   const methods = useForm({
     resolver: yupResolver(NewSchema),
-    reValidateMode: "onChange",
+    reValidateMode: 'onChange',
     defaultValues: {
-      documentType: 'passbook',
+      documentType: 'cheque',
       bankName: '',
       branchName: '',
       accountNumber: '',
       ifscCode: '',
-      accountType: 'SAVINGS',
+      accountType: 'CURRENT',
       addressProof: null,
+      accountHolderName: '',
+      bankAddress: '',
     },
   });
 
-  const { setValue, control, watch, handleSubmit } = methods;
+  const {
+    handleSubmit,
+    getValues,
+    setValue,
+    watch,
+    control,
+    formState: { isSubmitting },
+  } = methods;
+
   const values = watch();
   const documentType = useWatch({ control, name: 'documentType' });
 
-  // ---------------- FILE UPLOAD ----------------
   const handleDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file) {
-      setValue("addressProof", file, { shouldValidate: true });
+      setValue('addressProof', file, { shouldValidate: true });
     }
   };
 
-  // ---------------- SUBMIT ----------------
   const onSubmit = handleSubmit(async (data) => {
-    const bankPayload = {
-      account_number: data.accountNumber,
-      bank_name: data.bankName,
-      branch_name: data.branchName,
-      account_type: data.accountType,
-      ifsc_code: data.ifscCode,
-      document_type: data.documentType,
-      account_proof: data.addressProof,
-    };
+    try {
+      const usersId = sessionStorage.getItem('trustee_user_id');
 
-    console.log("📤 BANK DATA SUBMITTED:", bankPayload);
+      if (!usersId) {
+        enqueueSnackbar('User ID missing. Please restart KYC process.', { variant: 'error' });
+        return;
+      }
 
-    // No API — just next step
-    router.push(paths.KYCSignatories);
+      const proofFile = data.addressProof;
+      let uploadedProofId = null;
+
+      if (proofFile) {
+        const fd = new FormData();
+        fd.append('file', proofFile);
+
+        const uploadRes = await axiosInstance.post('/files', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        uploadedProofId = uploadRes?.data?.files?.[0]?.id;
+
+        if (!uploadedProofId) {
+          enqueueSnackbar('Failed to upload address proof', { variant: 'error' });
+          return;
+        }
+      }
+
+      const payload = {
+        usersId: usersId,
+        bankDetails: {
+          bankName: data.bankName,
+          bankShortCode: data.bankShortCode,
+          ifscCode: data.ifscCode,
+          branchName: data.branchName,
+          bankAddress: data.bankAddress,
+          accountType: data.accountType === 'CURRENT' ? 1 : 0,
+          accountHolderName: data.accountHolderName,
+          accountNumber: data.accountNumber,
+          bankAccountProofType: data.documentType === 'cheque' ? 0 : 1,
+          bankAccountProofId: uploadedProofId,
+        },
+      };
+
+      console.log('📤 FINAL BANK PAYLOAD:', payload);
+
+      const res = await axiosInstance.post('/trustee-profiles/kyc-bank-details', payload);
+
+      if (res?.data?.success) {
+        enqueueSnackbar('Bank details submitted successfully!', { variant: 'success' });
+        router.push(paths.KYCSignatories);
+      } else {
+        enqueueSnackbar(res?.data?.message || 'Something went wrong!', {
+          variant: 'error',
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar('Failed to submit bank details', { variant: 'error' });
+    }
   });
 
-  // ---------------- PROGRESS BAR ----------------
-  const requiredFields = [
-    "addressProof",
-    "bankName",
-    "branchName",
-    "accountNumber",
-    "ifscCode",
-  ];
+  const requiredFields = ['addressProof', 'bankName', 'branchName', 'accountNumber', 'ifscCode'];
 
   const errors = methods.formState.errors;
 
@@ -116,10 +165,9 @@ export default function KYCBankDetails() {
             p: { xs: 2, md: 4 },
             borderRadius: 2,
             border: (theme) => `1px solid ${theme.palette.divider}`,
-            boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
+            boxShadow: '0px 4px 20px rgba(0,0,0,0.08)',
           }}
         >
-          {/* ---------------- SELECT DOCUMENT TYPE ---------------- */}
           <Typography variant="h6" sx={{ fontWeight: 500, mb: 2 }}>
             Select Document Type:
           </Typography>
@@ -130,10 +178,9 @@ export default function KYCBankDetails() {
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (value) =>
-                  value ? value : <Box sx={{ color: "text.disabled" }}>Select Type</Box>,
+                  value ? value : <Box sx={{ color: 'text.disabled' }}>Select Type</Box>,
               }}
             >
-              <MenuItem value="passbook">Passbook</MenuItem>
               <MenuItem value="cheque">Cheque</MenuItem>
               <MenuItem value="bank_statement">Bank Statement</MenuItem>
             </RHFSelect>
@@ -142,13 +189,7 @@ export default function KYCBankDetails() {
           {/* ---------------- ADDRESS PROOF UPLOAD ---------------- */}
           <RHFFileUploadBox
             name="addressProof"
-            label={`Upload ${
-              documentType === "passbook"
-                ? "Passbook"
-                : documentType === "cheque"
-                ? "Cheque"
-                : "Bank Statement"
-            }`}
+            label={`Upload ${documentType === 'cheque' ? 'Cheque' : 'Bank Statement'}`}
             icon="mdi:file-document-outline"
             color="#1e88e5"
             acceptedTypes="pdf,xls,docx,jpeg"
@@ -160,37 +201,132 @@ export default function KYCBankDetails() {
           <Box sx={{ py: 4 }}>
             <Grid container spacing={3}>
               <Grid xs={12} md={9}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <Box>
-                    <Typography sx={{ mb: 1, fontWeight: 600 }}>Bank Name</Typography>
-                    <RHFTextField name="bankName" placeholder="Enter Bank Name" />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box sx={{ position: 'relative' }}>
+                    <RHFTextField
+                      name="ifscCode"
+                      label="IFSC Code"
+                      placeholder="Enter IFSC Code"
+                      InputProps={{
+                        endAdornment: (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              bgcolor: '#00328A',
+                              color: 'white',
+                              textTransform: 'none',
+                              fontWeight: 600,
+                              borderRadius: '6px',
+                              minHeight: '32px',
+                              px: 2,
+                              '&:hover': { bgcolor: '#002670' },
+                            }}
+                            onClick={async () => {
+                              const ifsc = getValues('ifscCode');
+
+                              if (!ifsc) {
+                                enqueueSnackbar('Please enter IFSC Code first', {
+                                  variant: 'warning',
+                                });
+                                return;
+                              }
+
+                              try {
+                                const res = await axiosInstance.get(
+                                  `/bank-details/get-by-ifsc/${ifsc}`
+                                );
+
+                                const data = res?.data?.bankDetails;
+
+                                if (!data) {
+                                  enqueueSnackbar('No bank details found', { variant: 'error' });
+                                  return;
+                                }
+
+                                // Autofill form values
+                                setValue('bankName', data.bankName || '');
+                                setValue('branchName', data.branchName || '');
+                                setValue('bankShortCode', data.bankShortCode || '');
+                                setValue('bankAddress', data.bankAddress || '');
+                                setValue('city', data.city || '');
+                                setValue('state', data.state || '');
+                                setValue('district', data.district || '');
+
+                                enqueueSnackbar('Bank details fetched successfully', {
+                                  variant: 'success',
+                                });
+                              } catch (error) {
+                                console.error(error);
+                                enqueueSnackbar(
+                                  error?.response?.data?.message || 'Invalid IFSC Code',
+                                  { variant: 'error' }
+                                );
+                              }
+                            }}
+                          >
+                            Fetch
+                          </Button>
+                        ),
+                      }}
+                    />
                   </Box>
 
                   <Box>
-                    <Typography sx={{ mb: 1, fontWeight: 600 }}>Branch Name</Typography>
-                    <RHFTextField name="branchName" placeholder="Enter Branch Name" />
+                    <RHFTextField name="bankName" label="Bank Name" placeholder="Enter Bank Name" />
                   </Box>
-
                   <Box>
-                    <Typography sx={{ mb: 1, fontWeight: 600 }}>Account Number</Typography>
-                    <RHFTextField name="accountNumber" placeholder="Enter Account Number" />
+                    <RHFTextField
+                      name="branchName"
+                      label="Branch Name"
+                      placeholder="Enter Branch Name"
+                    />
                   </Box>
-
                   <Box>
-                    <Typography sx={{ mb: 1, fontWeight: 600 }}>IFSC Code</Typography>
-                    <RHFTextField name="ifscCode" placeholder="Enter IFSC Code" />
+                    <RHFTextField
+                      name="accountHolderName"
+                      label="Account Holder Name"
+                      placeholder="Enter Account Holder Name"
+                    />
+                  </Box>
+                  <Box>
+                    <RHFTextField
+                      name="accountNumber"
+                      label="Account Number"
+                      placeholder="Enter Account Number"
+                    />
+                  </Box>
+                  <Box>
+                    <RHFTextField
+                      name="bankAddress"
+                      label="Bank Address"
+                      placeholder="Bank Address"
+                      InputLabelProps={{
+                        shrink: Boolean(getValues('bankAddress')),
+                      }}
+                    />
                   </Box>
                 </Box>
               </Grid>
 
               <Grid xs={12} md={3}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <Box>
-                    <Typography sx={{ mb: 1, fontWeight: 600 }}>Account Type</Typography>
-                    <RHFSelect name="accountType">
+                    <RHFSelect name="accountType" label="Account Type" disabled>
                       <MenuItem value="SAVINGS">Savings</MenuItem>
                       <MenuItem value="CURRENT">Current</MenuItem>
                     </RHFSelect>
+                  </Box>
+                  <Box>
+                    <RHFTextField
+                      name="bankShortCode"
+                      label="Bank Short Code"
+                      placeholder="Bank Short Code"
+                      InputLabelProps={{
+                        shrink: Boolean(getValues('bankShortCode')),
+                      }}
+                    />
                   </Box>
                 </Box>
               </Grid>
@@ -199,7 +335,7 @@ export default function KYCBankDetails() {
         </Paper>
 
         {/* ---------------- FOOTER BUTTONS ---------------- */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, mb: 2 }}>
           <Button component={RouterLink} href={paths.kycCompanyDetails} variant="outlined">
             Back
           </Button>

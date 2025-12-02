@@ -67,3 +67,23 @@ export function useFilterEntityTypes(queryString) {
 
     return memoizedValue;
 }
+
+
+export function useGetTrusteeEntityTypes() {
+    const URL = endpoints.trusteeEntityType.list;
+
+    const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
+
+    const memoizedValue = useMemo(
+        () => ({
+            EntityTypes: data || [],
+            EntityTypesLoading: isLoading,
+            EntityTypesError: error,
+            EntityTypesValidating: isValidating,
+            EntityTypesEmpty: !isLoading && (!data || data.length === 0),
+        }),
+        [data, error, isLoading, isValidating]
+    );
+
+    return memoizedValue;
+}

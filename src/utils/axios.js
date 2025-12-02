@@ -76,6 +76,11 @@ export const endpoints = {
     filterList: (filter) => `/company-entity-types?filter=${filter}`,
     details: (id) => `/company-entity-types/${id}`,
   },
+  trusteeEntityType: {
+    list: '/trustee-entity-types',
+    filterList: (filter) => `/trustee-entity-types?filter=${filter}`,
+    details: (id) => `/trustee-entity-types/${id}`,
+  },
   sector: {
     list: '/company-sector-types',
     filterList: (filter) => `/company-sector-types?filter=${filter}`,
