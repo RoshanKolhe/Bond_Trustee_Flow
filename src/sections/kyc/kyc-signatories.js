@@ -26,6 +26,7 @@ import { paths } from 'src/routes/paths';
 import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
 import KYCAddSignatoriesForm from './kyc-add-signatories-form';
+import KYCStepper from './kyc-stepper';
 
 // ----------------------------------------------------------------------
 
@@ -72,9 +73,11 @@ export default function KYCSignatories() {
       (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+  const percent = 100;
 
   return (
     <Container sx={{ position: 'relative', py: { xs: 6, sm: 8, md: 10 } }}>
+      <KYCStepper percent={percent} />
       <KYCTitle
         title="Authorized Signatories"
         subtitle={'Add director and authorized signatories for your company'}
@@ -150,9 +153,7 @@ export default function KYCSignatories() {
                 <TableCell align="left">Phone</TableCell>
                 <TableCell align="left">DOB</TableCell>
                 <TableCell align="left">PAN</TableCell>
-                <TableCell align="left">Aadhaar</TableCell>
-                <TableCell align="left">Photo</TableCell>
-                <TableCell align="left">Signature</TableCell>
+                <TableCell align="left">Board Resolution</TableCell>
                 <TableCell align="left">Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -178,28 +179,8 @@ export default function KYCSignatories() {
                   </TableCell>
 
                   <TableCell>
-                    {row.aadhaar ? (
-                      <a href={row.aadhaar} target="_blank" rel="noopener noreferrer">
-                        View
-                      </a>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    {row.passportPhoto ? (
-                      <a href={row.passportPhoto} target="_blank" rel="noopener noreferrer">
-                        View
-                      </a>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    {row.signature ? (
-                      <a href={row.signature} target="_blank" rel="noopener noreferrer">
+                    {row.boardResolution ? (
+                      <a href={row.boardResolution} target="_blank" rel="noopener noreferrer">
                         View
                       </a>
                     ) : (
