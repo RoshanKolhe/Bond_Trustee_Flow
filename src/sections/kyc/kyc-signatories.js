@@ -27,6 +27,7 @@ import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
 import KYCAddSignatoriesForm from './kyc-add-signatories-form';
 import KYCStepper from './kyc-stepper';
+import { useGetKycProgress, useGetSignatories } from 'src/api/trusteeKyc';
 
 // ----------------------------------------------------------------------
 
@@ -64,15 +65,17 @@ const rows = [
 export default function KYCSignatories() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { signatories, loading } = useGetSignatories();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const filteredRows = rows.filter((row) =>
+  const filteredRows = signatories.filter((row) =>
     Object.values(row).some(
       (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
   const percent = 100;
 
   return (
@@ -162,15 +165,29 @@ export default function KYCSignatories() {
             <TableBody>
               {filteredRows.map((row, index) => (
                 <TableRow key={index}>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.role}</TableCell>
+                  <TableCell>{row.fullName}</TableCell>
+
+                  <TableCell>{row.designationValue}</TableCell>
+
                   <TableCell>{row.email}</TableCell>
+
                   <TableCell>{row.phone}</TableCell>
-                  <TableCell>{row.dob}</TableCell>
 
                   <TableCell>
-                    {row.pan ? (
-                      <a href={row.pan} target="_blank" rel="noopener noreferrer">
+                    {row.submittedDateOfBirth
+                      ? new Date(row.submittedDateOfBirth).toLocaleDateString()
+                      : '-'}
+                  </TableCell>
+
+                  {/* PAN */}
+                  <TableCell>
+                    {row.panCardFile?.fileUrl ? (
+                      <a
+                        href={row.panCardFile.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                      >
                         View
                       </a>
                     ) : (
@@ -178,9 +195,15 @@ export default function KYCSignatories() {
                     )}
                   </TableCell>
 
+                  {/* Board Resolution */}
                   <TableCell>
-                    {row.boardResolution ? (
-                      <a href={row.boardResolution} target="_blank" rel="noopener noreferrer">
+                    {row.boardResolutionFile?.fileUrl ? (
+                      <a
+                        href={row.boardResolutionFile.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                      >
                         View
                       </a>
                     ) : (
@@ -188,8 +211,10 @@ export default function KYCSignatories() {
                     )}
                   </TableCell>
 
-                  <TableCell>{row.status}</TableCell>
+                  {/* Status */}
+                  <TableCell>{row.status === 1 ? 'Verified' : 'Pending'}</TableCell>
 
+                  {/* Actions */}
                   <TableCell align="right">
                     <IconButton color="error">
                       <Iconify icon="eva:trash-2-outline" />

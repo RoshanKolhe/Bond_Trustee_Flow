@@ -33,6 +33,7 @@ import { useGetTrusteeEntityTypes } from 'src/api/entityType';
 import { paths } from 'src/routes/paths';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useRouter } from 'src/routes/hook';
+import { useGetKycProgress } from 'src/api/trusteeKyc';
 
 // ----------------------------------------------------------------------
 
@@ -40,11 +41,22 @@ export default function KYCBasicInfo() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const router = useRouter();
+  const storedProfileId = sessionStorage.getItem('trustee_profile_id');
+
+  const sessionId = localStorage.getItem('sessionId');
+  const {
+    kycProgress,
+    profileId: fetchedProfileId,
+    kycProgressLoading,
+  } = useGetKycProgress(sessionId);
+
+  const profileId = storedProfileId || fetchedProfileId;
+  console.log('KYCBasicInfo profileId:', profileId);
 
   const [panExtractionStatus, setPanExtractionStatus] = useState('idle'); // 'idle' | 'success' | 'failed'
   const [extractedPanDetails, setExtractedPanDetails] = useState(null);
   const [uploadedPanFile, setUploadedPanFile] = useState(null);
-  const isPanUploaded = Boolean(uploadedPanFile); 
+  const isPanUploaded = Boolean(uploadedPanFile);
   // State to store mapped API values
   const [sectorOptions, setSectorOptions] = useState([]);
   const [entityOptions, setEntityOptions] = useState([]);
@@ -311,12 +323,47 @@ export default function KYCBasicInfo() {
   });
 
   useEffect(() => {
+    if (fetchedProfileId) {
+      sessionStorage.setItem('trustee_profile_id', fetchedProfileId);
+    }
+  }, [fetchedProfileId]);
+
+  useEffect(() => {
     if (EntityTypes && !EntityTypesEmpty) {
       setEntityOptions(EntityTypes);
     } else {
       setEntityOptions([]);
     }
   }, [EntityTypes, EntityTypesEmpty]);
+
+  useEffect(() => {
+    if (kycProgress?.profile) {
+      const p = kycProgress.profile;
+
+      reset({
+        cin: p.CIN || '',
+        companyName: p.legalEntityName || '',
+        gstin: p.GSTIN || '',
+        dateOfIncorporation: p.dateOfIncorporation ? dayjs(p.dateOfIncorporation).toDate() : null,
+
+        msmeUdyamRegistrationNo: p.udyamRegistrationNumber || '',
+        sebiRegistrationNumber: p.sebiRegistrationNumber || '',
+        sebiValidityDate: p.sebiValidityDate ? dayjs(p.sebiValidityDate).toDate() : null,
+
+        city: p.cityOfIncorporation || '',
+        state: p.stateOfIncorporation || '',
+        country: p.countryOfIncorporation || 'India',
+
+        // PAN fields — your GET API does NOT return them
+        panFile: null,
+        panNumber: '',
+        dateOfBirth: null,
+        panHoldersName: '',
+
+        companyEntityTypeId: p.trusteeEntityTypesId || '',
+      });
+    }
+  }, [kycProgress, reset]);
 
   return (
     <Container>
@@ -698,7 +745,7 @@ export default function KYCBasicInfo() {
               <RHFTextField
                 name="panNumber"
                 placeholder="Your PAN Number"
-                disabled={!isPanUploaded} 
+                disabled={!isPanUploaded}
                 onFocus={() => handleHumanInteraction('panNumber')}
               />
             </Grid>
@@ -717,7 +764,7 @@ export default function KYCBasicInfo() {
                 render={({ field, fieldState: { error } }) => (
                   <DatePicker
                     value={field.value}
-                    disabled={!isPanUploaded} 
+                    disabled={!isPanUploaded}
                     onChange={(newValue) => {
                       field.onChange(newValue);
                       handleHumanInteraction('dateOfBirth');
@@ -748,7 +795,7 @@ export default function KYCBasicInfo() {
               <RHFTextField
                 name="panHoldersName"
                 placeholder="Enter Name as per PAN"
-                disabled={!isPanUploaded} 
+                disabled={!isPanUploaded}
                 onFocus={() => handleHumanInteraction('panHoldersName')}
               />
             </Grid>

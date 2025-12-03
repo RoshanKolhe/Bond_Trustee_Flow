@@ -35,13 +35,10 @@ import { useGetKycProgress, useGetKycSection } from 'src/api/trusteeKyc';
 
 export default function KYCCompanyDetails() {
   const router = useRouter();
-  const sessionId = localStorage.getItem('sessionId');
-
-  const { profileId, kycProgressLoading } = useGetKycProgress(sessionId);
+  const { profileId, loading: kycProgressLoading } = useGetKycProgress();
 
   const { kycSectionData, kycSectionLoading } = useGetKycSection(
     'trustee_documents',
-    profileId,
     '/trustee-kyc/company-details'
   );
 
@@ -108,14 +105,19 @@ export default function KYCCompanyDetails() {
     defaultValues,
   });
 
-  const { setValue, watch, control, handleSubmit, formState: { errors, isSubmitting } } = methods;
+  const {
+    setValue,
+    watch,
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = methods;
+  const values = watch();
   const moaAoaType = useWatch({ control, name: 'moaAoaType' });
 
   // -------------------------------------------------------------
   const getMoaAoaLabel = () =>
-    moaAoaType === 'moa'
-      ? 'MoA - Memorandum of Association'
-      : 'AoA - Articles of Association';
+    moaAoaType === 'moa' ? 'MoA - Memorandum of Association' : 'AoA - Articles of Association';
 
   // -------------------------------------------------------------
   const onSubmit = handleSubmit(async (form) => {
@@ -181,20 +183,29 @@ export default function KYCCompanyDetails() {
     );
   }
 
+  const requiredFields = ['certificateOfIncorporation', 'moaAoa'];
+
+  const calculatePercent = () => {
+    let valid = 0;
+    requiredFields.forEach((field) => {
+      const value = values[field];
+      if (value && !errors[field]) valid++;
+    });
+    return Math.round((valid / requiredFields.length) * 100);
+  };
+
+  const percent = calculatePercent();
+
   // -------------------------------------------------------------
   return (
     <Container>
-      <KYCStepper percent={50} />
+      <KYCStepper percent={percent} />
 
-      <KYCTitle
-        title="Trustee Company Details"
-        subtitle="Submit required company documents."
-      />
+      <KYCTitle title="Trustee Company Details" subtitle="Submit required company documents." />
 
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <Paper sx={{ p: 3, mt: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-
             {/* ================= COI ================= */}
             <RHFFileUploadBox
               name="certificateOfIncorporation"

@@ -24,11 +24,14 @@ import { useRouter } from 'src/routes/hook';
 import KYCStepper from './kyc-stepper';
 import { enqueueSnackbar } from 'notistack';
 import axiosInstance from 'src/utils/axios';
+import { useGetDetails, useGetKycProgress } from 'src/api/trusteeKyc';
+import { useEffect, useState } from 'react';
 
 // ----------------------------------------------------------------------
 
 export default function KYCBankDetails() {
   const router = useRouter();
+  const { Details: bankDetails, Loading: bankLoading } = useGetDetails();
 
   // ---------------- VALIDATION ----------------
   const NewSchema = Yup.object().shape({
@@ -63,6 +66,7 @@ export default function KYCBankDetails() {
     getValues,
     setValue,
     watch,
+    reset,
     control,
     formState: { isSubmitting },
   } = methods;
@@ -76,6 +80,14 @@ export default function KYCBankDetails() {
       setValue('addressProof', file, { shouldValidate: true });
     }
   };
+
+  const existingProof = bankDetails?.bankAccountProof
+    ? {
+        name: bankDetails.bankAccountProof.fileOriginalName,
+        url: bankDetails.bankAccountProof.fileUrl,
+        status: bankDetails.status === 1 ? 'approved' : 'pending', // ✅ FIXED
+      }
+    : null;
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -154,6 +166,23 @@ export default function KYCBankDetails() {
 
   const percent = calculatePercent();
 
+  useEffect(() => {
+    if (bankDetails) {
+      reset({
+        documentType: bankDetails.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
+        bankName: bankDetails.bankName || '',
+        branchName: bankDetails.branchName || '',
+        accountNumber: bankDetails.accountNumber || '',
+        ifscCode: bankDetails.ifscCode || '',
+        accountType: bankDetails.accountType === 1 ? 'CURRENT' : 'SAVINGS',
+        addressProof: null,
+        accountHolderName: bankDetails.accountHolderName || '',
+        bankAddress: bankDetails.bankAddress || '',
+        bankShortCode: bankDetails.bankShortCode || '',
+      });
+    }
+  }, [bankDetails, reset]);
+
   return (
     <Container>
       <KYCStepper percent={percent} />
@@ -194,6 +223,7 @@ export default function KYCBankDetails() {
             color="#1e88e5"
             acceptedTypes="pdf,xls,docx,jpeg"
             maxSizeMB={10}
+            existing={existingProof}
             onDrop={(files) => handleDrop(files)}
           />
 

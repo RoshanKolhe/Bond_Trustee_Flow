@@ -1,13 +1,17 @@
 import useSWR from 'swr';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { fetcher, endpoints } from 'src/utils/axios';
 
 export function useGetKycProgress(sessionId) {
-  const URL = sessionId
-    ? endpoints.trusteeKyc.kycProgress(sessionId)
-    : null;
+  const URL = sessionId ? endpoints.trusteeKyc.kycProgress(sessionId) : null;
 
   const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
+
+  useEffect(() => {
+    if (data?.profile?.id) {
+      sessionStorage.setItem('trustee_profile_id', data.profile.id);
+    }
+  }, [data]);
 
   const memoizedValue = useMemo(
     () => ({
@@ -24,27 +28,62 @@ export function useGetKycProgress(sessionId) {
   return memoizedValue;
 }
 
-export function useGetKycSection(section, profileId, route = '') {
+export function useGetKycSection(section, route = '') {
+  const profileId = sessionStorage.getItem('trustee_profile_id'); // ⬅️ get it directly
+
   const URL =
-    section && profileId
-      ? endpoints.trusteeKyc.getSection(section, profileId, route)
-      : null;
+    section && profileId ? endpoints.trusteeKyc.getSection(section, profileId, route) : null;
 
   const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
     keepPreviousData: true,
   });
 
-  const memoizedValue = useMemo(
-    () => ({
-      kycSectionData: data || null,
-      kycSectionLoading: isLoading,
-      kycSectionError: error,
-      kycSectionValidating: isValidating,
-      kycSectionEmpty: !isLoading && !data,
-    }),
-    [data, isLoading, error, isValidating]
-  );
-
-  return memoizedValue;
+  return {
+    kycSectionData: data || null,
+    kycSectionLoading: isLoading,
+    kycSectionError: error,
+    kycSectionValidating: isValidating,
+    kycSectionEmpty: !isLoading && !data,
+  };
 }
 
+export function useGetDetails() {
+  const profileId = sessionStorage.getItem('trustee_profile_id'); // ⬅️ Directly read
+
+  const URL = profileId
+    ? endpoints.trusteeKyc.getSection('trustee_bank_details', profileId, '')
+    : null;
+
+  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+  });
+
+  return {
+    Details: data?.data?.[0] || null,
+    rawData: data || null,
+    Loading: isLoading,
+    Error: error,
+    Validating: isValidating,
+    Empty: !isLoading && !data?.data?.length,
+  };
+}
+
+export function useGetSignatories() {
+  const profileId = sessionStorage.getItem('trustee_profile_id'); 
+
+  const URL = profileId
+    ? endpoints.trusteeKyc.getSection('trustee_authorized_signatories', profileId, '')
+    : null;
+
+  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+  });
+
+  return {
+    signatories: data?.data || [],
+    loading: isLoading,
+    error,
+    validating: isValidating,
+    empty: !isLoading && !data?.data?.length,
+  };
+}
