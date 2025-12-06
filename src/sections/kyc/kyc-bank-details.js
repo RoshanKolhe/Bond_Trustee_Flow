@@ -129,7 +129,7 @@ export default function KYCBankDetails() {
           bankAddress: data.bankAddress,
           accountType: data.accountType === 'CURRENT' ? 1 : 0,
           accountHolderName: data.accountHolderName,
-          accountNumber: data.accountNumber,
+          accountNumber: String(data.accountNumber),
           bankAccountProofType: data.documentType === 'cheque' ? 0 : 1,
           bankAccountProofId: uploadedProofId,
         },
