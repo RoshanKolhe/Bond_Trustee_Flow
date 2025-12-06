@@ -9,7 +9,7 @@ export function useGetKycProgress(sessionId) {
 
   useEffect(() => {
     if (data?.profile?.id) {
-      sessionStorage.setItem('trustee_profile_id', data.profile.id);
+      sessionStorage.setItem('trustee_user_id', data.profile.usersId);
     }
   }, [data]);
 
@@ -29,7 +29,7 @@ export function useGetKycProgress(sessionId) {
 }
 
 export function useGetKycSection(section, route = '') {
-  const profileId = sessionStorage.getItem('trustee_profile_id'); // ⬅️ get it directly
+  const profileId = sessionStorage.getItem('trustee_user_id'); // ⬅️ get it directly
 
   const URL =
     section && profileId ? endpoints.trusteeKyc.getSection(section, profileId, route) : null;
@@ -48,7 +48,7 @@ export function useGetKycSection(section, route = '') {
 }
 
 export function useGetDetails() {
-  const profileId = sessionStorage.getItem('trustee_profile_id'); // ⬅️ Directly read
+  const profileId = sessionStorage.getItem('trustee_user_id'); // ⬅️ Directly read
 
   const URL = profileId
     ? endpoints.trusteeKyc.getSection('trustee_bank_details', profileId, '')
@@ -69,7 +69,7 @@ export function useGetDetails() {
 }
 
 export function useGetSignatories() {
-  const profileId = sessionStorage.getItem('trustee_profile_id'); 
+  const profileId = sessionStorage.getItem('trustee_user_id'); 
 
   const URL = profileId
     ? endpoints.trusteeKyc.getSection('trustee_authorized_signatories', profileId, '')

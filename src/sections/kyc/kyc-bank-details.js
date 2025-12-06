@@ -24,7 +24,7 @@ import { useRouter } from 'src/routes/hook';
 import KYCStepper from './kyc-stepper';
 import { enqueueSnackbar } from 'notistack';
 import axiosInstance from 'src/utils/axios';
-import { useGetDetails, useGetKycProgress } from 'src/api/trusteeKyc';
+import { useGetDetails } from 'src/api/trusteeKyc';
 import { useEffect, useState } from 'react';
 
 // ----------------------------------------------------------------------
@@ -83,9 +83,11 @@ export default function KYCBankDetails() {
 
   const existingProof = bankDetails?.bankAccountProof
     ? {
+        id: bankDetails.bankAccountProof.id,
         name: bankDetails.bankAccountProof.fileOriginalName,
         url: bankDetails.bankAccountProof.fileUrl,
-        status: bankDetails.status === 1 ? 'approved' : 'pending', // ✅ FIXED
+        status: bankDetails.status === 1 ? 'approved' : 'pending',
+        isServerFile: true, 
       }
     : null;
 

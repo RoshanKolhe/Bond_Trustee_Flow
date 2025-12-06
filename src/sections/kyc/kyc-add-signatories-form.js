@@ -54,7 +54,6 @@ export default function KYCAddSignatoriesForm({
     phoneNumber: Yup.string()
       .required('Phone number is required')
       .matches(/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number'),
-    dob: Yup.date().required('Date of birth is required').typeError('Invalid date'),
     role: Yup.string().required('Role is required'),
     customDesignation: Yup.string().when('role', (role, schema) =>
       role === 'OTHER' ? schema.required('Please enter designation') : schema.notRequired()
@@ -81,7 +80,6 @@ export default function KYCAddSignatoriesForm({
       name: currentUser?.fullName || '',
       email: currentUser?.email || '',
       phoneNumber: currentUser?.phone || '',
-      dob: '',
       role: currentUser?.designationType || '',
       panCard: '',
       customDesignation: '',
@@ -318,33 +316,6 @@ export default function KYCAddSignatoriesForm({
               InputLabelProps={{ shrink: true }}
               inputProps={{ maxLength: 10 }}
             />
-            <Controller
-              name="dob"
-              control={control}
-              render={({ field, fieldState: { error } }) => (
-                <DatePicker
-                  {...field}
-                  label="Date of Birth"
-                  value={
-                    field.value
-                      ? field.value instanceof Date
-                        ? field.value
-                        : new Date(field.value)
-                      : null
-                  }
-                  onChange={(newValue) => field.onChange(newValue)}
-                  format="dd/MM/yyyy"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!error,
-                      helperText: error?.message,
-                    },
-                  }}
-                />
-              )}
-            />
-
             <RHFSelect
               name="role"
               label="Designation*"

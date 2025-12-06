@@ -44,13 +44,6 @@ export default function KYCCompanyDetails() {
 
   const [docs, setDocs] = useState([]);
 
-  // === Map incoming GET API ===
-  useEffect(() => {
-    if (kycSectionData?.data) {
-      setDocs(kycSectionData.data || []);
-    }
-  }, [kycSectionData]);
-
   // -------------------------------------------------------------
   // Document mapping based on your API IDs
   const DOCUMENT_MAP = {
@@ -175,13 +168,6 @@ export default function KYCCompanyDetails() {
   });
 
   // -------------------------------------------------------------
-  if (kycProgressLoading || kycSectionLoading) {
-    return (
-      <Container>
-        <Typography sx={{ mt: 5 }}>Loading Company Documents…</Typography>
-      </Container>
-    );
-  }
 
   const requiredFields = ['certificateOfIncorporation', 'moaAoa'];
 
@@ -196,7 +182,13 @@ export default function KYCCompanyDetails() {
 
   const percent = calculatePercent();
 
-  // -------------------------------------------------------------
+  // === Map incoming GET API ===
+  useEffect(() => {
+    if (kycSectionData && !kycSectionLoading) {
+      setDocs(kycSectionData?.data);
+    }
+  }, [kycSectionData, kycSectionLoading]);
+
   return (
     <Container>
       <KYCStepper percent={percent} />

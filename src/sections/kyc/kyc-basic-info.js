@@ -41,7 +41,7 @@ export default function KYCBasicInfo() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const router = useRouter();
-  const storedProfileId = sessionStorage.getItem('trustee_profile_id');
+  const storedProfileId = sessionStorage.getItem('trustee_user_id');
 
   const sessionId = localStorage.getItem('sessionId');
   const {
@@ -263,7 +263,7 @@ export default function KYCBasicInfo() {
             submittedPanNumber: formData.panNumber,
             submittedDateOfBirth: dobStr,
           }
-        : null;
+        : {};
 
       // FINAL API PAYLOAD — 100% MATCHES THE API FORMAT YOU GAVE
       const payload = {
@@ -322,9 +322,20 @@ export default function KYCBasicInfo() {
     }
   });
 
+  const existingPAN = useMemo(() => {
+    const p = kycProgress?.profile?.trusteePanCards;
+    if (!p || !p.panCardDocument) return null;
+
+    return {
+      name: p.panCardDocument.fileOriginalName,
+      url: p.panCardDocument.fileUrl,
+      status: p.status,
+    };
+  }, [kycProgress]);
+
   useEffect(() => {
     if (fetchedProfileId) {
-      sessionStorage.setItem('trustee_profile_id', fetchedProfileId);
+      sessionStorage.setItem('trustee_user_id', fetchedProfileId);
     }
   }, [fetchedProfileId]);
 
@@ -356,14 +367,51 @@ export default function KYCBasicInfo() {
 
         // PAN fields — your GET API does NOT return them
         panFile: null,
-        panNumber: '',
-        dateOfBirth: null,
-        panHoldersName: '',
+        panCardDocumentId: p?.trusteePanCards?.panCardDocumentId || '',
 
-        companyEntityTypeId: p.trusteeEntityTypesId || '',
+        panNumber:
+          p?.trusteePanCards?.submittedPanNumber || p?.trusteePanCards?.extractedPanNumber || '',
+
+        dateOfBirth: p?.trusteePanCards?.submittedDateOfBirth
+          ? dayjs(p.trusteePanCards.submittedDateOfBirth).toDate()
+          : p?.trusteePanCards?.extractedDateOfBirth
+          ? dayjs(p.trusteePanCards.extractedDateOfBirth).toDate()
+          : null,
+
+        panHoldersName:
+          p?.trusteePanCards?.submittedTrusteeName ||
+          p?.trusteePanCards?.extractedTrusteeName ||
+          '',
+
+        companyEntityTypeId: p?.trusteeEntityTypesId || '',
       });
+      if (p?.trusteePanCards?.panCardDocument) {
+        const serverFile = {
+          name: p.trusteePanCards.panCardDocument.fileOriginalName,
+          url: p.trusteePanCards.panCardDocument.fileUrl,
+          id: p.trusteePanCards.panCardDocument.id,
+          isServerFile: true,
+        };
+
+        setValue('panFile', serverFile, { shouldValidate: true });
+        setUploadedPanFile(serverFile);
+
+        // Also hydrate extractedPanDetails for humanEdited comparison
+        setExtractedPanDetails({
+          extractedTrusteeName:
+            p?.trusteePanCards?.extractedTrusteeName ||
+            p?.trusteePanCards?.submittedTrusteeName ||
+            '',
+          extractedPanNumber:
+            p?.trusteePanCards?.extractedPanNumber || p?.trusteePanCards?.submittedPanNumber || '',
+          extractedDateOfBirth:
+            p?.trusteePanCards?.extractedDateOfBirth ||
+            p?.trusteePanCards?.submittedDateOfBirth ||
+            '',
+        });
+      }
     }
-  }, [kycProgress, reset]);
+  }, [kycProgress, reset, setValue]);
 
   return (
     <Container>
@@ -722,6 +770,7 @@ export default function KYCBasicInfo() {
                 color="#1e88e5"
                 acceptedTypes="pdf,xls,docx,jpeg"
                 maxSizeMB={10}
+                existing={existingPAN}
                 onDrop={async (acceptedFiles) => {
                   const file = acceptedFiles[0];
                   if (file) {

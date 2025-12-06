@@ -20,6 +20,48 @@ export default function JwtRegisterTrusteeByEmailView() {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
 
+  const redirectBasedOnProgress = async (sessionId) => {
+    try {
+      const res = await axiosInstance.get(`/trustee-profiles/kyc-progress/${sessionId}`);
+
+      const progress = res?.data?.currentProgress || [];
+      const profile = res?.data?.profile;
+
+      console.log('CURRENT PROGRESS:', progress);
+
+      if (profile?.usersId) {
+        sessionStorage.setItem('trustee_user_id', profile.usersId);
+      }
+      if (profile?.id) {
+        sessionStorage.setItem('trustee_profile_id', profile.id);
+      }
+
+      if (!progress.includes('trustee_kyc')) {
+        router.push(paths.kycBasicInfo);
+        return;
+      }
+      if (!progress.includes('trustee_documents')) {
+        router.push(paths.kycCompanyDetails);
+        return;
+      }
+      if (!progress.includes('trustee_bank_details')) {
+        router.push(paths.KYCBankDetails);
+        return;
+      }
+      if (!progress.includes('trustee_authorized_signatories')) {
+        router.push(paths.KYCSignatories);
+        return;
+      }
+
+      router.push(paths.KYCPending);
+    } catch (err) {
+      console.error('KYC Progress Fetch Error:', err);
+      enqueueSnackbar('Unable to fetch KYC progress', { variant: 'error' });
+
+      router.push(paths.kycBasicInfo);
+    }
+  };
+
   const [errorMsg, setErrorMsg] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState(Array(4).fill(''));
@@ -99,7 +141,7 @@ export default function JwtRegisterTrusteeByEmailView() {
 
       enqueueSnackbar(res.data.message || 'Email Verified!', { variant: 'success' });
 
-      router.push(paths.kycBasicInfo);
+      await redirectBasedOnProgress(sessionId);
     } catch (err) {
       setErrorMsg(err?.response?.data?.message || 'Invalid OTP');
     }
