@@ -182,7 +182,7 @@ export default function KYCBasicInfo() {
 
       // Fill form values from extraction
       if (panHolderNameFromApi) {
-        setValue('companyName', panHolderNameFromApi, {
+        setValue('panHoldersName', panHolderNameFromApi, {
           shouldValidate: true,
           shouldDirty: true,
         });
@@ -316,11 +316,12 @@ export default function KYCBasicInfo() {
       }
     } catch (error) {
       console.error(error);
-      enqueueSnackbar(error?.response?.data?.message || error.message || 'Something went wrong', {
+      enqueueSnackbar(error?.error?.message  || 'Something went wrong', {
         variant: 'error',
       });
     }
   });
+
 
   const existingPAN = useMemo(() => {
     const p = kycProgress?.profile?.trusteePanCards;
