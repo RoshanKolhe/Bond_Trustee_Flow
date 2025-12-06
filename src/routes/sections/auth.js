@@ -89,9 +89,9 @@ const authJwt = {
     {
       path: 'login',
       element: (
-        <AuthModernCompactLayout>
+        <AuthClassicLayout>
           <JwtLoginPage />
-        </AuthModernCompactLayout>
+        </AuthClassicLayout>
       ),
     },
     {
