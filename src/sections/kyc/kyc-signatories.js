@@ -26,6 +26,8 @@ import { paths } from 'src/routes/paths';
 import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
 import KYCAddSignatoriesForm from './kyc-add-signatories-form';
+import KYCStepper from './kyc-stepper';
+import { useGetKycProgress, useGetSignatories } from 'src/api/trusteeKyc';
 
 // ----------------------------------------------------------------------
 
@@ -63,18 +65,22 @@ const rows = [
 export default function KYCSignatories() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { signatories, loading } = useGetSignatories();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const filteredRows = rows.filter((row) =>
+  const filteredRows = signatories.filter((row) =>
     Object.values(row).some(
       (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
+  const percent = 100;
+
   return (
     <Container sx={{ position: 'relative', py: { xs: 6, sm: 8, md: 10 } }}>
+      <KYCStepper percent={percent} />
       <KYCTitle
         title="Authorized Signatories"
         subtitle={'Add director and authorized signatories for your company'}
@@ -145,30 +151,72 @@ export default function KYCSignatories() {
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
-                <TableCell align="left">DIN</TableCell>
                 <TableCell align="left">Role</TableCell>
                 <TableCell align="left">Email</TableCell>
                 <TableCell align="left">Phone</TableCell>
-                <TableCell align="left">ID Proof</TableCell>
+                <TableCell align="left">DOB</TableCell>
+                <TableCell align="left">PAN</TableCell>
+                <TableCell align="left">Board Resolution</TableCell>
                 <TableCell align="left">Status</TableCell>
-
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {filteredRows.map((row) => (
-                <TableRow key={row.din} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                  <TableCell component="th" scope="row">
-                    {row.name}
+              {filteredRows.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row.fullName}</TableCell>
+
+                  <TableCell>{row.designationValue}</TableCell>
+
+                  <TableCell>{row.email}</TableCell>
+
+                  <TableCell>{row.phone}</TableCell>
+
+                  <TableCell>
+                    {row.submittedDateOfBirth
+                      ? new Date(row.submittedDateOfBirth).toLocaleDateString()
+                      : '-'}
                   </TableCell>
-                  <TableCell align="left">{row.din}</TableCell>
-                  <TableCell align="left">{row.role}</TableCell>
-                  <TableCell align="left">{row.email}</TableCell>
-                  <TableCell align="left">{row.phone}</TableCell>
-                  <TableCell align="left">{row.idProof}</TableCell>
-                  <TableCell align="left">{row.status}</TableCell>
+
+                  {/* PAN */}
+                  <TableCell>
+                    {row.panCardFile?.fileUrl ? (
+                      <a
+                        href={row.panCardFile.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                      >
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+
+                  {/* Board Resolution */}
+                  <TableCell>
+                    {row.boardResolutionFile?.fileUrl ? (
+                      <a
+                        href={row.boardResolutionFile.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                      >
+                        View
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+
+                  {/* Status */}
+                  <TableCell>{row.status === 1 ? 'Verified' : 'Pending'}</TableCell>
+
+                  {/* Actions */}
                   <TableCell align="right">
-                    <IconButton color="error" aria-label="delete">
+                    <IconButton color="error">
                       <Iconify icon="eva:trash-2-outline" />
                     </IconButton>
                   </TableCell>

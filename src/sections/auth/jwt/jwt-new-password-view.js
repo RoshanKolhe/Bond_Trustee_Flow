@@ -27,7 +27,7 @@ import { Card } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
-export default function AmplifyNewPasswordView() {
+export default function JwtNewPasswordView() {
   const { newPassword, forgotPassword } = useAuthContext();
 
   const router = useRouter();
@@ -161,7 +161,7 @@ export default function AmplifyNewPasswordView() {
 
       <Link
         component={RouterLink}
-        href={paths.auth.amplify.login}
+        href={paths.auth.jwt.login}
         color="inherit"
         variant="subtitle2"
         sx={{

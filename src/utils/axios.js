@@ -1,7 +1,3 @@
-
-
-
-
 //
 import axios from 'axios';
 // config
@@ -61,7 +57,7 @@ export const endpoints = {
     details: (id) => `/schedulers/${id}`,
   },
 
-   companyInfo: {
+  companyInfo: {
     list: '/api/kyc/issuer_kyc/company-info/',
     filterList: (filter) => `/api/kyc/issuer_kyc/company-info/?filter=${filter}`,
     details: (id) => `/api/kyc/issuer_kyc/company-info//${id}`,
@@ -70,5 +66,25 @@ export const endpoints = {
     list: '/designations',
     filterList: (filter) => `/designations?filter=${filter}`,
     details: (id) => `/designations/${id}`,
-  }
+  },
+  entityType: {
+    list: '/company-entity-types',
+    filterList: (filter) => `/company-entity-types?filter=${filter}`,
+    details: (id) => `/company-entity-types/${id}`,
+  },
+  trusteeKyc: {
+    kycProgress: (sessionId) => `/trustee-profiles/kyc-progress/${sessionId}`,
+    getSection: (section, profileId, route = '') =>
+      `/trustee-profiles/kyc-get-data/${section}/${profileId}?route=${encodeURIComponent(route)}`,
+  },
+  trusteeEntityType: {
+    list: '/trustee-entity-types',
+    filterList: (filter) => `/trustee-entity-types?filter=${filter}`,
+    details: (id) => `/trustee-entity-types/${id}`,
+  },
+  sector: {
+    list: '/company-sector-types',
+    filterList: (filter) => `/company-sector-types?filter=${filter}`,
+    details: (id) => `/company-sector-types/${id}`,
+  },
 };

@@ -21,7 +21,10 @@ const AmplifyForgotPasswordPage = lazy(() => import('src/pages/auth/amplify/forg
 
 // JWT
 const JwtLoginPage = lazy(() => import('src/pages/auth/jwt/login'));
-const JwtRegisterPage = lazy(() => import('src/pages/auth/jwt/register'));
+const JwtRegisterPhonePage = lazy(() => import('src/pages/auth/jwt/register-phone'));
+const JwtRegisterEmailPage = lazy(() => import('src/pages/auth/jwt/register-email'));
+const JwtNewPasswordPage = lazy(() => import('src/pages/auth/jwt/new-password'));
+const JwtForgotPasswordPage = lazy(() => import('src/pages/auth/jwt/forgot-password'));
 
 // FIREBASE
 const FirebaseLoginPage = lazy(() => import('src/pages/auth/firebase/login'));
@@ -63,9 +66,9 @@ const authAmplify = {
     },
     {
       element: (
-        <CompactLayout>
+        <AuthClassicLayout>
           <Outlet />
-        </CompactLayout>
+        </AuthClassicLayout>
       ),
       children: [
         { path: 'verify', element: <AmplifyVerifyPage /> },
@@ -95,12 +98,31 @@ const authJwt = {
       ),
     },
     {
-      path: 'register',
+      path: 'register-phone',
       element: (
         <AuthClassicLayout title="Manage the job more effectively with Minimal">
-          <JwtRegisterPage />
+          <JwtRegisterPhonePage />
         </AuthClassicLayout>
       ),
+    },
+    {
+      path: 'register-email',
+      element: (
+        <AuthClassicLayout title="Manage the job more effectively with Minimal">
+          <JwtRegisterEmailPage />
+        </AuthClassicLayout>
+      ),
+    },
+    {
+      element: (
+        <AuthClassicLayout>
+          <Outlet />
+        </AuthClassicLayout>
+      ),
+      children: [
+        { path: 'new-password', element: <JwtNewPasswordPage /> },
+        { path: 'forgot-password', element: <JwtForgotPasswordPage /> },
+      ],
     },
   ],
 };

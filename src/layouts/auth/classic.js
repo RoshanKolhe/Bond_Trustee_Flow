@@ -135,7 +135,7 @@ export default function AuthClassicLayout({ children, image, title }) {
       sx={{
         minHeight: '100vh',
         backgroundImage: 'url(/assets/background/login/bg_company.png)',
-        backgroundSize: '900px',
+         backgroundSize: '900px',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }}

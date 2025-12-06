@@ -1,7 +1,6 @@
 // utils
 import { paramCase } from 'src/utils/change-case';
 import { _id, _postTitles } from 'src/_mock/assets';
-import KYCBankDetails from 'src/sections/kyc/kyc-bank-details';
 
 // ----------------------------------------------------------------------
 
@@ -18,14 +17,14 @@ const ROOTS = {
 // ----------------------------------------------------------------------
 
 export const paths = {
-  kyc: '/kyc',
-  kycBasicInfo: '/kyc/basic-info',
-  kycCompanyDetails: '/kyc/company-details',
-  KYCBankDetails: '/kyc/bank-details',
-  KYCReviewAndSubmit: '/kyc/review-and-submit',
-  KYCSucessfull: '/kyc/sucessfull',
-  KYCSignatories: '/kyc/signatories',
-  KYCPending: '/kyc/pending',
+  kyc: '/trustee-kyc',
+  kycBasicInfo: '/trustee-kyc/basic-info',
+  kycCompanyDetails: '/trustee-kyc/company-details',
+  KYCBankDetails: '/trustee-kyc/bank-details',
+  KYCReviewAndSubmit: '/trustee-kyc/review-and-submit',
+  KYCSucessfull: '/trustee-kyc/sucessfull',
+  KYCSignatories: '/trustee-kyc/signatories',
+  KYCPending: '/trustee-kyc/pending',
 
   // kycCompanyDetails: '/kyc/kyc-company-details',
   kycAddressInfo: '/kyc/kyc-address-info',
@@ -73,7 +72,10 @@ export const paths = {
     },
     jwt: {
       login: `${ROOTS.AUTH}/jwt/login`,
-      register: `${ROOTS.AUTH}/jwt/register`,
+      registerPhone: `${ROOTS.AUTH}/jwt/register-phone`,
+      registerEmail: `${ROOTS.AUTH}/jwt/register-email`,
+      newPassword: `${ROOTS.AUTH}/jwt/new-password`,
+      forgotPassword: `${ROOTS.AUTH}/jwt/forgot-password`,
     },
     firebase: {
       login: `${ROOTS.AUTH}/firebase/login`,

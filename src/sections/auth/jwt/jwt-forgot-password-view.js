@@ -21,7 +21,7 @@ import { Card } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
-export default function AmplifyForgotPasswordView() {
+export default function JwtForgotPasswordView() {
   const { forgotPassword } = useAuthContext();
 
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function AmplifyForgotPasswordView() {
 
       const searchParams = new URLSearchParams({ email: data.email }).toString();
 
-      const href = `${paths.auth.amplify.newPassword}?${searchParams}`;
+      const href = `${paths.auth.jwt.newPassword}?${searchParams}`;
       router.push(href);
     } catch (error) {
       console.error(error);
@@ -92,9 +92,11 @@ export default function AmplifyForgotPasswordView() {
       <PasswordIcon sx={{ height: 96 }} />
 
       <Stack spacing={1} sx={{ my: 5 }}>
-        <Typography variant="h3" sx={{display:'flex', justifyContent:'center'}}>Forgot your password?</Typography>
+        <Typography variant="h3" sx={{ display: 'flex', justifyContent: 'center' }}>
+          Forgot your password?
+        </Typography>
 
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign:'center' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
           Please enter the email address associated with your account and We will email you a link
           to reset your password.
         </Typography>
