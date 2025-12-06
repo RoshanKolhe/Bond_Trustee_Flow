@@ -162,7 +162,7 @@ export default function JwtLoginView() {
         Login
       </LoadingButton>
       <Typography variant="body2" sx={{ textAlign: 'center' }}>
-        copy right © 2023 mynameisbond all right reserve
+        Copyright © 2025 MyNameIsBond. All rights reserved.
       </Typography>
     </Stack>
   );
