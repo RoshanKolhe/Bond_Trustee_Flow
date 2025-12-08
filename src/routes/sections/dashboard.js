@@ -45,7 +45,7 @@ const CompanyProfilePage = lazy(() => import('src/pages/dashboard/company/profil
 // COMPANY
 const ROIGuidancePage = lazy(() => import('src/pages/dashboard/issure-services/roi'));
 const ROIFundFormPage = lazy(() => import('src/pages/dashboard/issure-services/roi-fund-form'));
-const AfterCompleteRoiStagePage = lazy(()=> import('src/pages/dashboard/issure-services/view'))
+const AfterCompleteRoiStagePage = lazy(() => import('src/pages/dashboard/issure-services/view'));
 // WORKFLOW
 const ReactFlowPage = lazy(() => import('src/pages/dashboard/react-flow/board'));
 // SCHEDULER
@@ -68,6 +68,11 @@ const JobDetailsPage = lazy(() => import('src/pages/dashboard/job/details'));
 const JobListPage = lazy(() => import('src/pages/dashboard/job/list'));
 const JobCreatePage = lazy(() => import('src/pages/dashboard/job/new'));
 const JobEditPage = lazy(() => import('src/pages/dashboard/job/edit'));
+// SIGNATORIES
+const SignatoriesCreatePage = lazy(() => import('src/pages/dashboard/signatories/new'));
+const SignatoriesListPage = lazy(() => import('src/pages/dashboard/signatories/list'));
+const SignatoriesEditPage = lazy(() => import('src/pages/dashboard/signatories/edit'));
+const SignatoriesDetailsPage = lazy(()=> import('src/pages/dashboard/signatories/details'))
 // TOUR
 const TourDetailsPage = lazy(() => import('src/pages/dashboard/tour/details'));
 const TourListPage = lazy(() => import('src/pages/dashboard/tour/list'));
@@ -131,7 +136,7 @@ export const dashboardRoutes = [
           { element: <ROIGuidancePage />, index: true },
           { path: 'roi', element: <ROIGuidancePage /> },
           { path: 'fund-position-form', element: <ROIFundFormPage /> },
-          {path:'view', element:<AfterCompleteRoiStagePage/>},
+          { path: 'view', element: <AfterCompleteRoiStagePage /> },
         ],
       },
       {
@@ -152,7 +157,16 @@ export const dashboardRoutes = [
           { path: ':id', element: <OrderDetailsPage /> },
         ],
       },
-
+      {
+        path: 'signatories',
+        children: [
+          { element: <SignatoriesListPage />, index: true },
+          { path: 'list', element: <SignatoriesListPage /> },
+          { path: ':id/edit', element: <SignatoriesEditPage /> },
+          { path: 'new', element: <SignatoriesCreatePage /> },
+          { path: ':id', element: <SignatoriesDetailsPage /> },
+        ],
+      },
       {
         path: 'reactflow',
         children: [

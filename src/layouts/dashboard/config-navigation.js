@@ -72,6 +72,16 @@ export function useNavData() {
       {
         subheader: t('management'),
          items: [
+
+          {
+            title: t('signatories'),
+            path: paths.dashboard.signatories.root,
+            icon: ICONS.signatories,
+            children: [
+                { title: t('list'), path: paths.dashboard.signatories.list },
+                { title: t('create'), path: paths.dashboard.signatories.new },
+            ],
+          },
         //   // USER
         //   {
         //     title: t('user'),

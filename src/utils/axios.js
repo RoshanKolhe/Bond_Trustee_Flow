@@ -31,7 +31,7 @@ export const endpoints = {
   kanban: '/api/kanban',
   calendar: '/api/calendar',
   auth: {
-    me: '/me',
+    me: '/auth/me',
     login: '/auth/trustee-login',
     register: '/register',
   },
@@ -56,7 +56,11 @@ export const endpoints = {
     filterList: (filter) => `/schedulers?filter=${filter}`,
     details: (id) => `/schedulers/${id}`,
   },
-
+  signatories: {
+    list: '/company-profiles/authorize-signatory',
+    filterList: (filter) => `/company-profiles/authorize-signatory?filter=${filter}`,
+    details: (signatoryId) => `/company-profiles/authorize-signatory/${signatoryId}`,
+  },
   companyInfo: {
     list: '/api/kyc/issuer_kyc/company-info/',
     filterList: (filter) => `/api/kyc/issuer_kyc/company-info/?filter=${filter}`,

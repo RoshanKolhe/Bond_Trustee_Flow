@@ -123,6 +123,13 @@ export const paths = {
       //   edit: `${ROOTS.DASHBOARD}/user/${MOCK_ID}/edit`,
       // },
     },
+    signatories: {
+      root: `${ROOTS.DASHBOARD}/signatories`,
+      new: `${ROOTS.DASHBOARD}/signatories/new`,
+      list: `${ROOTS.DASHBOARD}/signatories/list`,
+      edit: (id) => `${ROOTS.DASHBOARD}/signatories/${id}/edit`,
+      details: (id) => `${ROOTS.DASHBOARD}/signatories/${id}`,
+    },
     company: {
       root: `${ROOTS.DASHBOARD}/company`,
       new: `${ROOTS.DASHBOARD}/company/new`,
