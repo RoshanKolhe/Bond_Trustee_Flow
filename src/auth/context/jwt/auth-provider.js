@@ -107,7 +107,7 @@ export function AuthProvider({ children }) {
 
     const { accessToken, user } = response.data;
 
-    if (user?.permissions?.includes('trustee')) {
+    if (user?.roles?.includes('trustee')) {
       setSession(accessToken);
       dispatch({
         type: 'LOGIN',
