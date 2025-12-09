@@ -246,7 +246,7 @@ export default function KYCBasicInfo() {
       // Build extracted PAN object
       const extractedPan = extractedPanDetails
         ? {
-            extractedTrusteeName: extractedPanDetails.extractedCompanyName || '',
+            extractedTrusteeName: extractedPanDetails.extractedTrusteeName || '',
             extractedPanNumber: extractedPanDetails.extractedPanNumber || '',
             extractedDateOfBirth: extractedPanDetails.extractedDateOfBirth || '',
           }
