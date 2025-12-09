@@ -18,17 +18,24 @@ import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import { useRouter } from 'src/routes/hook';
 import { enqueueSnackbar } from 'notistack';
 import axiosInstance from 'src/utils/axios';
-import { useGetDetails } from 'src/api/trusteeKyc';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card } from '@mui/material';
-import { useLocation } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+import { useGetBankDetail, useGetBankDetails } from 'src/api/trusteeKyc';
+import YupErrorMessage from 'src/components/error-field/yup-error-messages';
 
 // ----------------------------------------------------------------------
 
 export default function KYCBankDetails() {
+  const { id } = useParams();
   const router = useRouter();
   const location = useLocation();
-  const bankDetails = location.state?.bankData || null;
+  const { bank, loading, refreshBank } = useGetBankDetail(id);
+
+  const { refreshBankDetail } = useGetBankDetails();
+  const raw = bank;
+  const bankDetails = raw?.data || raw?.bankDetails || raw || {};
+
   console.log('🏦 Bank Details Fetched:', bankDetails);
 
   const isApproved = bankDetails?.status === 1;
@@ -36,7 +43,11 @@ export default function KYCBankDetails() {
   // ---------------- VALIDATION ----------------
   const NewSchema = Yup.object().shape({
     documentType: Yup.string().required('Document Type is required'),
-    addressProof: Yup.mixed().required('Address proof is required'),
+    addressProof: Yup.mixed().when([], {
+      is: () => !bankDetails?.id,
+      then: (schema) => schema.required('Address proof is required'),
+      otherwise: (schema) => schema.nullable(),
+    }),
     bankName: Yup.string().required('Bank Name is required'),
     branchName: Yup.string().required('Branch Name is required'),
     accountNumber: Yup.number().required('Account Number is required'),
@@ -45,20 +56,30 @@ export default function KYCBankDetails() {
     accountHolderName: Yup.string().required('Account Holder Name is required'),
   });
 
+  const defaultValues = useMemo(
+    () => ({
+      documentType: bankDetails?.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
+
+      bankName: bankDetails?.bankName || '',
+      branchName: bankDetails?.branchName || '',
+      accountNumber: bankDetails?.accountNumber || '',
+      ifscCode: bankDetails?.ifscCode || '',
+
+      accountType: bankDetails?.accountType === 1 ? 'CURRENT' : 'SAVINGS',
+
+      addressProof: null,
+
+      accountHolderName: bankDetails?.accountHolderName || '',
+      bankAddress: bankDetails?.bankAddress || '',
+      bankShortCode: bankDetails?.bankShortCode || '',
+    }),
+    [bankDetails]
+  );
+
   const methods = useForm({
     resolver: yupResolver(NewSchema),
-    reValidateMode: 'onChange',
-    defaultValues: {
-      documentType: 'cheque',
-      bankName: '',
-      branchName: '',
-      accountNumber: '',
-      ifscCode: '',
-      accountType: 'CURRENT',
-      addressProof: null,
-      accountHolderName: '',
-      bankAddress: '',
-    },
+    // reValidateMode: 'onChange',
+    defaultValues,
   });
 
   const {
@@ -113,37 +134,43 @@ export default function KYCBankDetails() {
         uploadedProofId = uploadRes?.data?.files?.[0]?.id;
       }
 
+      const bankId = bankDetails?.id;
+      console.log('📤 FINAL BANK bankId:', bankId);
+
       const payload = {
-        usersId,
-        bankDetails: {
-          bankName: data.bankName,
-          bankShortCode: data.bankShortCode,
-          ifscCode: data.ifscCode,
-          branchName: data.branchName,
-          bankAddress: data.bankAddress,
-          accountType: data.accountType === 'CURRENT' ? 1 : 0,
-          accountHolderName: data.accountHolderName,
-          accountNumber: String(data.accountNumber),
-          bankAccountProofType: data.documentType === 'cheque' ? 0 : 1,
-          bankAccountProofId: uploadedProofId,
-        },
+        bankName: data.bankName,
+        bankShortCode: data.bankShortCode,
+        ifscCode: data.ifscCode,
+        branchName: data.branchName,
+        bankAddress: data.bankAddress,
+        accountType: data.accountType === 'CURRENT' ? 1 : 0,
+        accountHolderName: data.accountHolderName,
+        accountNumber: String(data.accountNumber),
+        bankAccountProofType: data.documentType === 'cheque' ? 0 : 1,
+        bankAccountProofId: uploadedProofId,
       };
 
       console.log('📤 FINAL BANK PAYLOAD:', payload);
+      let finalPayload;
+
+      if (!bankId) {
+        finalPayload = { bankDetails: payload };
+      } else {
+        finalPayload = payload;
+      }
 
       let res;
+
       if (!bankDetails?.id) {
-        res = await axiosInstance.post('/trustee-profiles/kyc-bank-details', payload);
+        res = await axiosInstance.post('/trustee-profiles/bank-details', finalPayload);
       } else {
-        res = await axiosInstance.patch('/trustee-profiles/kyc-bank-details', {
-          bankDetailsId: bankDetails.id,
-          ...payload,
-        });
+        res = await axiosInstance.patch(`/trustee-profiles/bank-details/${bankId}`, finalPayload);
       }
 
       if (res?.data?.success) {
         enqueueSnackbar('Bank details saved successfully!', { variant: 'success' });
-        router.push('/trusteeProfiles/new');
+        refreshBankDetail();
+        router.push('/dashboard/user/profile');
       } else {
         enqueueSnackbar(res?.data?.message || 'Something went wrong!', { variant: 'error' });
       }
@@ -154,21 +181,10 @@ export default function KYCBankDetails() {
   });
 
   useEffect(() => {
-    if (bankDetails) {
-      reset({
-        documentType: bankDetails.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
-        bankName: bankDetails.bankName || '',
-        branchName: bankDetails.branchName || '',
-        accountNumber: bankDetails.accountNumber || '',
-        ifscCode: bankDetails.ifscCode || '',
-        accountType: bankDetails.accountType === 1 ? 'CURRENT' : 'SAVINGS',
-        addressProof: null,
-        accountHolderName: bankDetails.accountHolderName || '',
-        bankAddress: bankDetails.bankAddress || '',
-        bankShortCode: bankDetails.bankShortCode || '',
-      });
+    if (bankDetails?.id) {
+      reset(defaultValues);
     }
-  }, [bankDetails, reset]);
+  }, [bankDetails, defaultValues, reset]);
 
   return (
     <Container>
@@ -210,6 +226,7 @@ export default function KYCBankDetails() {
             onDrop={(files) => handleDrop(files)}
             disabled={isApproved}
           />
+          <YupErrorMessage name="addressProof" />
 
           {/* ---------------- BANK FIELDS ---------------- */}
           <Box sx={{ py: 4 }}>
@@ -362,7 +379,7 @@ export default function KYCBankDetails() {
           {!isApproved && (
             <Box sx={{ display: 'flex', justifyContent: 'end', mt: 4, mb: 2 }}>
               <Button variant="contained" type="submit">
-                Save
+                {bankDetails?.id ? 'Update' : 'Save'}
               </Button>
             </Box>
           )}

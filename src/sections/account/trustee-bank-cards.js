@@ -4,7 +4,7 @@ import Iconify from 'src/components/iconify';
 import { useNavigate } from 'react-router';
 import { paths } from 'src/routes/paths';
 
-export default function BankDetailsCard({ bank, onViewRow }) {
+export default function BankDetailsCard({ bank, refreshBankDetail, onViewRow }) {
   const navigate = useNavigate();
   if (!bank) return null;
 
@@ -35,11 +35,7 @@ export default function BankDetailsCard({ bank, onViewRow }) {
         flexDirection: 'column',
         gap: 2,
       }}
-      onClick={() =>
-        navigate(paths.dashboard.trusteeProfiles.new, {
-          state: { bankData: bank },
-        })
-      }
+      onClick={() => navigate(paths.dashboard.trusteeProfiles.details(bank.id))}
     >
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -53,11 +49,7 @@ export default function BankDetailsCard({ bank, onViewRow }) {
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography
                 variant="h6"
-                onClick={() =>
-                  navigate(paths.dashboard.trusteeProfiles.new, {
-                    state: { bankData: bank },
-                  })
-                }
+                onClick={() => navigate(paths.dashboard.trusteeProfiles.details(bank.id))}
               >
                 {bank?.bankName}
               </Typography>
@@ -175,4 +167,6 @@ export default function BankDetailsCard({ bank, onViewRow }) {
 
 BankDetailsCard.propTypes = {
   onViewRow: PropTypes.func,
+  refreshBankDetail: PropTypes.func,
+  bank: PropTypes.object.isRequired,
 };

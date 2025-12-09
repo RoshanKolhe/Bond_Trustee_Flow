@@ -59,7 +59,7 @@ export function useGetDetails() {
   });
 
   const refreshDetails = () => {
-    mutate(); 
+    mutate();
   };
 
   return {
@@ -122,7 +122,9 @@ export function useGetBankDetails() {
     revalidateOnFocus: false,
   });
 
-  const refreshBankDetail = () => mutate();
+  const refreshBankDetail = () => {
+    mutate();
+  };
 
   return {
     bankDetails: data?.bankDetails || [],
@@ -134,6 +136,23 @@ export function useGetBankDetails() {
     refreshBankDetail,
   };
 }
+
+export function useGetBankDetail(id) {
+  const URL = id ? endpoints.trusteeKyc.details(id) : null;
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+  });
+
+  return {
+    bank: data?.bankDetails || null,
+    loading: isLoading,
+    error,
+    validating: isValidating,
+    refreshBank: () => mutate(),
+  };
+}
+
 
 export default function useGetProfileData() {
   const URL = endpoints.trusteeKyc.getProfileData;

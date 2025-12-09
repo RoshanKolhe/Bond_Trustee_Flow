@@ -80,6 +80,7 @@ export const endpoints = {
     kycProgress: (sessionId) => `/trustee-profiles/kyc-progress/${sessionId}`,
     getSection: (section, profileId, route = '') =>
       `/trustee-profiles/kyc-get-data/${section}/${profileId}?route=${encodeURIComponent(route)}`,
+    details: (id) => `/trustee-profiles/bank-details/${id}`,
     getBankDetails: `/trustee-profiles/bank-details`,
     getDocuments: `/trustee-profiles/documents`,
     getProfileData: `/trustee-profiles/me`,

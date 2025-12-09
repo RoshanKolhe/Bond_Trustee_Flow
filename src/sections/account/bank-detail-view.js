@@ -13,7 +13,7 @@ export default function TrusteeBankPage({ trusteeProfile }) {
   const userId = trusteeProfile?.usersId;
   const stepperId = trusteeProfile?.kycApplications?.currentProgress?.[2];
 
-  const { bankDetails, loading } = useGetBankDetails();
+  const { bankDetails, loading, refreshBankDetail } = useGetBankDetails();
 
   const [selectedBank, setSelectedBank] = useState(null);
 
@@ -51,7 +51,7 @@ export default function TrusteeBankPage({ trusteeProfile }) {
         <Grid container spacing={3}>
           {bankDetails.map((item) => (
             <Grid key={item.id} item xs={12} md={6}>
-              <BankDetailsCard bank={item} onViewRow={() => handleViewRow(item)} />
+              <BankDetailsCard bank={item} refreshBankDetail={refreshBankDetail} onViewRow={() => handleViewRow(item)} />
             </Grid>
           ))}
         </Grid>
