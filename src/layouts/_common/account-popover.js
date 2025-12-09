@@ -31,14 +31,6 @@ const OPTIONS = [
     label: 'Profile',
     linkTo: paths.dashboard.user.profile,
   },
-  {
-    label: 'Company Profile',
-    linkTo: paths.dashboard.company.profile,
-  },
-  // {
-  //   label: 'Settings',
-  //   linkTo: paths.dashboard.user.account,
-  // },
 ];
 
 // ---------------------------------------------------------------------//

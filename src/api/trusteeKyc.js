@@ -54,22 +54,27 @@ export function useGetDetails() {
     ? endpoints.trusteeKyc.getSection('trustee_bank_details', profileId, '')
     : null;
 
-  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
+  const { data, isLoading, error, isValidating, mutate } = useSWR(URL, fetcher, {
     keepPreviousData: true,
   });
 
+  const refreshDetails = () => {
+    mutate(); 
+  };
+
   return {
-    Details: data?.data?.[0] || null,
+    Details: data?.data || null,
     rawData: data || null,
     Loading: isLoading,
     Error: error,
     Validating: isValidating,
     Empty: !isLoading && !data?.data?.length,
+    refreshDetails,
   };
 }
 
 export function useGetSignatories() {
-  const profileId = sessionStorage.getItem('trustee_user_id'); 
+  const profileId = sessionStorage.getItem('trustee_user_id');
 
   const URL = profileId
     ? endpoints.trusteeKyc.getSection('trustee_authorized_signatories', profileId, '')
@@ -85,5 +90,47 @@ export function useGetSignatories() {
     error,
     validating: isValidating,
     empty: !isLoading && !data?.data?.length,
+  };
+}
+
+export function useGetDocuments(trusteeId) {
+  const URL = endpoints.trusteeKyc.getDocuments;
+
+  const { data, isLoading, error, isValidating, mutate } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+  });
+
+  const refreshDocuments = () => {
+    mutate();
+  };
+
+  return {
+    documents: data?.documents || [],
+    loading: isLoading,
+    error,
+    validating: isValidating,
+    empty: !isLoading && (!data?.documents || data.documents.length === 0),
+    refreshDocuments,
+  };
+}
+
+export function useGetBankDetails() {
+  const URL = endpoints.trusteeKyc.getBankDetails;
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+  });
+
+  const refreshBankDetail = () => mutate();
+
+  return {
+    bankDetails: data?.bankDetails || [],
+    loading: isLoading,
+    error,
+    validating: isValidating,
+    empty: !isLoading && !data?.bankDetails?.length,
+    raw: data,
+    refreshBankDetail,
   };
 }

@@ -53,6 +53,8 @@ const SchedulerNewPage = lazy(() => import('src/pages/dashboard/scheduler/new'))
 const SchedulerListPage = lazy(() => import('src/pages/dashboard/scheduler/list'));
 const SchedulerEditPage = lazy(() => import('src/pages/dashboard/scheduler/edit'));
 const SchedulerViewPage = lazy(() => import('src/pages/dashboard/scheduler/view'));
+// TRUSTEE PROFILE FOR KYC
+const TrusteeProfileNewPage = lazy(()=> import('src/pages/dashboard/trustee-profiles/new'))
 // DESIGNATION
 const DesignationNewPage = lazy(() => import('src/pages/dashboard/designation/new'));
 const DesignationListPage = lazy(() => import('src/pages/dashboard/designation/list'));
@@ -137,6 +139,13 @@ export const dashboardRoutes = [
           { path: 'roi', element: <ROIGuidancePage /> },
           { path: 'fund-position-form', element: <ROIFundFormPage /> },
           { path: 'view', element: <AfterCompleteRoiStagePage /> },
+        ],
+      },
+      {
+        path: 'trusteeProfiles',
+        children: [
+          { element: <TrusteeProfileNewPage />, index: true },
+          { path: 'new', element: <TrusteeProfileNewPage/> },
         ],
       },
       {
