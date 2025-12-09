@@ -134,3 +134,18 @@ export function useGetBankDetails() {
     refreshBankDetail,
   };
 }
+
+export default function useGetProfileData() {
+  const URL = endpoints.trusteeKyc.getProfileData;
+
+  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
+    keepPreviousData: true,
+  });
+
+  return {
+    profileData: data?.profile || null,
+    loading: isLoading,
+    error,
+    validating: isValidating,
+  };
+}

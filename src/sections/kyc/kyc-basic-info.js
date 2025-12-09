@@ -316,12 +316,11 @@ export default function KYCBasicInfo() {
       }
     } catch (error) {
       console.error(error);
-      enqueueSnackbar(error?.error?.message  || 'Something went wrong', {
+      enqueueSnackbar(error?.error?.message || 'Something went wrong', {
         variant: 'error',
       });
     }
   });
-
 
   const existingPAN = useMemo(() => {
     const p = kycProgress?.profile?.trusteePanCards;

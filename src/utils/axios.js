@@ -81,7 +81,8 @@ export const endpoints = {
     getSection: (section, profileId, route = '') =>
       `/trustee-profiles/kyc-get-data/${section}/${profileId}?route=${encodeURIComponent(route)}`,
     getBankDetails: `/trustee-profiles/bank-details`,
-    getDocuments: `/trustee-profiles/documents`
+    getDocuments: `/trustee-profiles/documents`,
+    getProfileData: `/trustee-profiles/me`,
   },
   trusteeEntityType: {
     list: '/trustee-entity-types',

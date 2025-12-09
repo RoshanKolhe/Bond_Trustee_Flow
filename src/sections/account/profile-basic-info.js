@@ -33,6 +33,8 @@ import dayjs from 'dayjs';
 import { useNavigate } from 'react-router';
 import { fData } from 'src/utils/format-number';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
+import useGetProfileData from 'src/api/trusteeKyc';
+import { useGetTrusteeEntityTypes } from 'src/api/entityType';
 
 // developer-provided uploaded file path (used as initial avatarUrl)
 const UPLOADED_DEV_FILE = '/mnt/data/Untitled document.docx';
@@ -41,12 +43,16 @@ const UPLOADED_DEV_FILE = '/mnt/data/Untitled document.docx';
 
 export default function CompanyAccountGeneral() {
   const { enqueueSnackbar } = useSnackbar();
-  const navigate = useNavigate();
 
   const [hasExistingData, setHasExistingData] = useState(false);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [userCompanyId, setUserCompanyId] = useState(null);
+  const [entityOptions, setEntityOptions] = useState([]);
+  const { EntityTypes, EntityTypesEmpty } = useGetTrusteeEntityTypes();
+
+  const { profileData } = useGetProfileData();
+  console.log('Profile Data in General Info:', profileData);
 
   // ------------------------------ validation --------------------------------
   const NewUserSchema = Yup.object().shape({
@@ -107,54 +113,53 @@ export default function CompanyAccountGeneral() {
 
   // --------------------------- fetch company info --------------------------
   useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      try {
-        const response = await axiosInstance.get(`/company-profiles/me`);
-        const companyData = response.data.profile;
+    if (EntityTypes && !EntityTypesEmpty) {
+      setEntityOptions(EntityTypes);
+    } else {
+      setEntityOptions([]);
+    }
+  }, [EntityTypes, EntityTypesEmpty]);
 
-        if (companyData) {
-          reset({
-            cin: companyData.CIN || '',
-            companyName: companyData.companyName || '',
-            gstin: companyData.GSTIN || '',
-            dateOfIncorporation: companyData.dateOfIncorporation
-              ? dayjs(companyData.dateOfIncorporation).toDate()
-              : null,
-            msmeUdyamRegistrationNo: companyData.udyamRegistrationNumber || '',
-            city: companyData.cityOfIncorporation || '',
-            state: companyData.stateOfIncorporation || '',
-            country: companyData.countryOfIncorporation || 'India',
+  useEffect(() => {
+    if (!profileData) return;
 
-            entityType: companyData.companyEntityType?.value || '',
-            sector: companyData.companySectorType?.value || '',
+    const p = profileData;
 
-            panNumber: companyData.companyPanCards?.submittedPanNumber || '',
-            dateOfBirth: companyData.companyPanCards?.submittedDateOfBirth
-              ? dayjs(companyData.companyPanCards.submittedDateOfBirth).toDate()
-              : null,
-            panHoldersName: companyData.companyPanCards?.submittedCompanyName || '',
+    reset({
+      cin: p.CIN || '',
+      companyName: p.legalEntityName || '',
+      gstin: p.GSTIN || '',
+      dateOfIncorporation: p.dateOfIncorporation ? dayjs(p.dateOfIncorporation).toDate() : null,
 
-            companyAbout: companyData.companyAbout || '',
+      msmeUdyamRegistrationNo: p.udyamRegistrationNumber || '',
+      city: p.cityOfIncorporation || '',
+      state: p.stateOfIncorporation || '',
+      country: p.countryOfIncorporation || 'India',
 
-            companyLogo: companyData.companyLogoData || null,
-          });
+      entityType: p?.trusteeEntityTypesId || '',
+      sector: '', // Trustee API does NOT have sector
 
-          setHasExistingData(true);
-          if (companyData.company_id) setUserCompanyId(companyData.company_id);
-        }
-      } catch (error) {
-        // silent fail - form stays empty (dev file used as avatar default)
-        console.error('fetchCompanyInfo error', error);
-      }
-    };
+      // PAN card mappings
+      panNumber:
+        p.trusteePanCards?.submittedPanNumber || p.trusteePanCards?.extractedPanNumber || '',
 
-    fetchCompanyInfo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      dateOfBirth: p.trusteePanCards?.submittedDateOfBirth
+        ? dayjs(p.trusteePanCards.submittedDateOfBirth).toDate()
+        : p.trusteePanCards?.extractedDateOfBirth
+        ? dayjs(p.trusteePanCards.extractedDateOfBirth).toDate()
+        : null,
 
-  // --------------------------- PAN extraction ------------------------------
+      panHoldersName:
+        p.trusteePanCards?.submittedTrusteeName || p.trusteePanCards?.extractedTrusteeName || '',
 
-  // --------------------------- Avatar upload (/files) ----------------------
+      companyAbout: p.trusteeAbout || '',
+
+      companyLogo: p.trusteeLogoId ? { id: p.trusteeLogoId, url: p.trusteeLogo?.fileUrl } : null,
+    });
+
+    setHasExistingData(true);
+  }, [profileData, reset]);
+
   const handleAvatarDrop = useCallback(
     async (acceptedFiles) => {
       const file = acceptedFiles[0];
@@ -320,12 +325,7 @@ export default function CompanyAccountGeneral() {
 
                   <Grid xs={12} md={6}>
                     <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }}>
-                      <RHFTextField
-                        name="city"
-                        placeholder="City"
-                        disabled
-                        sx={{ flex: 1 }}
-                      />
+                      <RHFTextField name="city" placeholder="City" disabled sx={{ flex: 1 }} />
                       <RHFSelect
                         name="state"
                         disabled
@@ -362,21 +362,13 @@ export default function CompanyAccountGeneral() {
                   <Grid xs={12} md={6}>
                     <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }}>
                       <Box sx={{ flex: 1 }}>
-                        <RHFSelect name="entityType" disabled>
-                          <MenuItem value="sole_proprietorship">Sole Proprietorship</MenuItem>
-                          <MenuItem value="private_limited">Private Limited</MenuItem>
-                          <MenuItem value="public_limited">Public Limited</MenuItem>
-                          <MenuItem value="llp">LLP</MenuItem>
-                          <MenuItem value="opc">OPC</MenuItem>
-                        </RHFSelect>
-                      </Box>
-
-                      <Box sx={{ flex: 1 }}>
-                        <RHFSelect name="sector" disabled>
-                          <MenuItem value="it">IT</MenuItem>
-                          <MenuItem value="banking">Banking</MenuItem>
-                          <MenuItem value="infrastructure">Infrastructure</MenuItem>
-                          <MenuItem value="others">Others</MenuItem>
+                        <RHFSelect name="entityType" label="Entity Type" disabled>
+                          <MenuItem value="">Select Entity Type</MenuItem>
+                          {entityOptions.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>
+                              {item.label}
+                            </MenuItem>
+                          ))}
                         </RHFSelect>
                       </Box>
                     </Stack>
@@ -421,11 +413,7 @@ export default function CompanyAccountGeneral() {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <RHFTextField
-                name="panHoldersName"
-                disabled
-                placeholder="Enter Name as per PAN"
-              />
+              <RHFTextField name="panHoldersName" disabled placeholder="Enter Name as per PAN" />
             </Grid>
             <Grid item xs={12} md={12}>
               <RHFTextField
