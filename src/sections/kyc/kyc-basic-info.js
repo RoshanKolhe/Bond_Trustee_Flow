@@ -209,7 +209,7 @@ export default function KYCBasicInfo() {
       const extracted = {
         extractedTrusteeName: panHolderNameFromApi || '',
         extractedPanNumber: panNumberFromApi || '',
-        extractedDateOfBirth: dobFromApi || '',
+        extractedDateOfBirth: (dobFromApi && dobFromApi !== '') ? dobFromApi : null,
       };
 
       setExtractedPanDetails(extracted);
