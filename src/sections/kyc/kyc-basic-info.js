@@ -167,7 +167,10 @@ export default function KYCBasicInfo() {
 
       // Adjust these keys according to your actual API response
       const panNumberFromApi = panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.extractedDateOfBirth || null;
+      const dobFromApi =
+        panData.extractedDateOfBirth && panData.extractedDateOfBirth !== ''
+          ? panData.extractedDateOfBirth
+          : null;
       const panHolderNameFromApi = panData?.extractedPanHolderName || '';
 
       if (!panNumberFromApi && !dobFromApi && !panHolderNameFromApi) {
@@ -263,7 +266,11 @@ export default function KYCBasicInfo() {
             submittedPanNumber: formData.panNumber,
             submittedDateOfBirth: dobStr,
           }
-        : {};
+        : {
+            submittedTrusteeName: formData.panHoldersName,
+            submittedPanNumber: formData.panNumber,
+            submittedDateOfBirth: dobStr,
+          };
 
       // FINAL API PAYLOAD — 100% MATCHES THE API FORMAT YOU GAVE
       const payload = {
