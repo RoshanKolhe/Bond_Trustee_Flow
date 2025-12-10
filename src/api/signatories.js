@@ -13,11 +13,11 @@ export function useGetSignatories() {
 
   const memoizedValue = useMemo(
     () => ({
-      Signatories: data?.signatories || [],
-      SignatoriesLoading: isLoading,
-      SignatoriesError: error,
-      SignatoriesValidating: isValidating,
-      SignatoriesEmpty: !isLoading && (!data || data.length === 0),
+      signatories: data?.signatories || [],
+      signatoriesLoading: isLoading,
+      signatoriesError: error,
+      signatoriesValidating: isValidating,
+      signatoriesEmpty: !isLoading && (!data || data.length === 0),
     }),
     [data, error, isLoading, isValidating]
   );

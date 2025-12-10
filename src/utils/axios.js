@@ -57,9 +57,9 @@ export const endpoints = {
     details: (id) => `/schedulers/${id}`,
   },
   signatories: {
-    list: '/company-profiles/authorize-signatory',
-    filterList: (filter) => `/company-profiles/authorize-signatory?filter=${filter}`,
-    details: (signatoryId) => `/company-profiles/authorize-signatory/${signatoryId}`,
+    list: '/trustee-profiles/authorize-signatory',
+    filterList: (filter) => `/trustee-profiles/authorize-signatory?filter=${filter}`,
+    details: (signatoryId) => `/trustee-profiles/authorize-signatory/${signatoryId}`,
   },
   companyInfo: {
     list: '/api/kyc/issuer_kyc/company-info/',

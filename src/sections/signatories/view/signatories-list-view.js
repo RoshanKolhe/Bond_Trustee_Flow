@@ -21,7 +21,6 @@ import { useBoolean } from 'src/hooks/use-boolean';
 // api
 import { RouterLink } from 'src/routes/components';
 
-
 // components
 import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
@@ -45,8 +44,6 @@ import { useGetSignatories } from 'src/api/signatories';
 import SignatoriesTableRow from '../signatoires-table-row';
 import SignatoriesTableFiltersResult from '../signatoires-table-filters-result';
 import SignatoriesTableToolbar from '../signatoires-table-toolbar';
-
-
 
 // ----------------------------------------------------------------------
 
@@ -78,10 +75,8 @@ export default function SignatoriesListView() {
   const router = useRouter();
   const confirm = useBoolean();
 
-
-
-  const {Signatories}= useGetSignatories();
-console.log(Signatories);
+  const { signatories: Signatories } = useGetSignatories();
+  console.log(Signatories);
 
   const handleViewRow = useCallback(
     (id) => {
@@ -90,7 +85,7 @@ console.log(Signatories);
     [router]
   );
 
-   const handleEditRow = useCallback(
+  const handleEditRow = useCallback(
     (id) => {
       router.push(paths.dashboard.scheduler.edit(id));
     },
@@ -217,7 +212,6 @@ console.log(Signatories);
                 </Tooltip>
               }
             />
-
 
             <Scrollbar>
               <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }}>

@@ -22,6 +22,8 @@ import { useAuthContext } from 'src/auth/hooks';
 import { DatePicker } from '@mui/x-date-pickers';
 import axiosInstance from 'src/utils/axios';
 import { Card, Grid } from '@mui/material';
+import { paths } from 'src/routes/paths';
+import { useRouter } from 'src/routes/hook';
 
 const ROLES = [
   { value: 'DIRECTOR', label: 'Director' },
@@ -39,6 +41,7 @@ export default function SignatoriesNewEditForm({
   isViewMode,
   isEditMode,
 }) {
+  const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const [isPanUploaded, setIsPanUploaded] = useState(false);
   const [extractedPan, setExtractedPan] = useState(null);
@@ -210,12 +213,10 @@ export default function SignatoriesNewEditForm({
       const panFileId = await uploadFile(data.panCard);
       const boardFileId = await uploadFile(data.boardResolution);
 
-
-
       const isCustom = data.role === 'OTHER';
+      const signatoryId = currentUser?.id;
 
       const payload = {
-
         signatory: {
           fullName: data.name,
           email: data.email,
@@ -240,11 +241,22 @@ export default function SignatoriesNewEditForm({
         },
       };
 
-      const res = await axiosInstance.post('/company-profiles/authorize-signatory', payload);
+      let res;
+
+      // const res = await axiosInstance.post('/trustee-profiles/authorize-signatory', payload);
+      if (!currentUser?.id) {
+        res = await axiosInstance.post('/trustee-profiles/authorize-signatory', payload);
+      } else {
+        res = await axiosInstance.patch(
+          `/trustee-profiles/authorize-signatory/${signatoryId}`,
+          payload
+        );
+      }
 
       if (res?.data?.success) {
         enqueueSnackbar('Signatory added successfully', { variant: 'success' });
-        reset()
+        reset();
+        router.push(paths.dashboard.signatories.list);
       } else {
         enqueueSnackbar(res?.data?.message || 'Something went wrong', {
           variant: 'error',
@@ -263,25 +275,44 @@ export default function SignatoriesNewEditForm({
   return (
     <Card sx={{ p: 4 }}>
       <FormProvider methods={methods} onSubmit={onSubmit}>
-
-
         <Grid container spacing={3} mt={2}>
-
           <Grid item xs={12} sm={6}>
-            <RHFTextField name="name" label="Name*" disabled={isViewMode} InputLabelProps={{ shrink: true }} />
+            <RHFTextField
+              name="name"
+              label="Name*"
+              disabled={isViewMode}
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <RHFTextField name="email" label="Email*" type="email" disabled={isViewMode} InputLabelProps={{ shrink: true }} />
+            <RHFTextField
+              name="email"
+              label="Email*"
+              type="email"
+              disabled={isViewMode}
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <RHFTextField name="phoneNumber" label="Phone Number*" type="tel" disabled={isViewMode}
-              InputLabelProps={{ shrink: true }} inputProps={{ maxLength: 10 }} />
+            <RHFTextField
+              name="phoneNumber"
+              label="Phone Number*"
+              type="tel"
+              disabled={isViewMode}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ maxLength: 10 }}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <RHFSelect name="role" label="Designation*" disabled={isViewMode} InputLabelProps={{ shrink: true }}>
+            <RHFSelect
+              name="role"
+              label="Designation*"
+              disabled={isViewMode}
+              InputLabelProps={{ shrink: true }}
+            >
               {ROLES.map((role) => (
                 <MenuItem key={role.value} value={role.value}>
                   {role.label}
@@ -300,7 +331,6 @@ export default function SignatoriesNewEditForm({
               />
             </Grid>
           )}
-
 
           <Grid item xs={12}>
             <RHFFileUploadBox
@@ -358,7 +388,6 @@ export default function SignatoriesNewEditForm({
             />
           </Grid>
 
-     
           <Grid item xs={12}>
             <RHFFileUploadBox
               name="boardResolution"
@@ -370,11 +399,7 @@ export default function SignatoriesNewEditForm({
             />
             {getErrorMessage('boardResolution')}
           </Grid>
-
         </Grid>
-
-
-
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, p: 2 }}>
           {/* <Button variant="outlined" onClick={onClose}>
@@ -392,10 +417,8 @@ export default function SignatoriesNewEditForm({
             </Button>
           )}
         </Box>
-
       </FormProvider>
     </Card>
-
   );
 }
 
