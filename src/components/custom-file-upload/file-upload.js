@@ -197,7 +197,7 @@ function UploadBox({
                       alignItems={{ xs: 'flex-start', md: 'center' }}
                     >
                       <Typography variant="body2" fontWeight={500}>
-                        {existing.name}
+                        {existing.name || existing.fileOriginalName}
                       </Typography>
                       {existing.status && (
                         <Typography

@@ -27,19 +27,6 @@ const ProductCheckoutPage = lazy(() => import('src/pages/product/checkout'));
 // BLOG
 const PostListPage = lazy(() => import('src/pages/post/list'));
 const PostDetailsPage = lazy(() => import('src/pages/post/details'));
-
-const KYCViewPage = lazy(() => import('src/pages/kyc/kyc'));
-const KYCBasicInfoPage = lazy(() => import('src/pages/kyc/kyc-basic-info'));
-const KYCCompanyDetailsPage = lazy(() => import('src/pages/kyc/kyc-company-details'));
-const KYCBankDetailsPage = lazy(() => import('src/pages/kyc/kyc-bank-details'))
-const KYCReviewAndSubmitPage = lazy(() => import('src/pages/kyc/kyc-review-and-submit'));
-const KYCSucessfullPage = lazy(() => import('src/pages/kyc/kyc-sucessfull'));
-const KYCPendingPage = lazy(() => import('src/pages/kyc/kyc-pending'));
-const KYCSignatoriesPage = lazy(() => import('src/pages/kyc/kyc-signatories'));
-// KYC
-const KycPage = lazy(() => import('src/pages/kyc/kyc'));
-const KycAddressInfoPage = lazy(() => import('src/pages/kyc/kyc-address-info'));
-const KycCompanyDetailsPage = lazy(() => import('src/pages/kyc/kyc-company-details'));
 // ----------------------------------------------------------------------
 
 export const mainRoutes = [
@@ -56,7 +43,7 @@ export const mainRoutes = [
       { path: 'contact-us', element: <ContactPage /> },
       { path: 'faqs', element: <FaqsPage /> },
       // { path: 'kyc', element: <KycPage /> },
-      
+
       {
         path: 'product',
         children: [
@@ -74,15 +61,6 @@ export const mainRoutes = [
           { path: ':title', element: <PostDetailsPage /> },
         ],
       },
-      { path: 'trustee-kyc', element: <KYCViewPage /> },
-      { path: 'trustee-kyc/basic-info', element: <KYCBasicInfoPage /> },
-      { path: 'trustee-kyc/company-details', element: <KYCCompanyDetailsPage /> },
-      { path: 'trustee-kyc/bank-details', element: <KYCBankDetailsPage /> },
-      { path: 'trustee-kyc/review-and-submit', element: <KYCReviewAndSubmitPage /> },
-      { path: 'trustee-kyc/sucessfull', element: <KYCSucessfullPage /> },
-      { path: 'trustee-kyc/pending', element: <KYCPendingPage /> },
-      { path: 'trustee-kyc/signatories', element: <KYCSignatoriesPage /> },
-      { path: 'trustee-kyc/address-info', element: <KycAddressInfoPage /> },
     ],
   },
   {

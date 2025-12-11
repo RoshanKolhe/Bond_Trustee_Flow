@@ -32,28 +32,19 @@ export default function JwtRegisterTrusteeByEmailView() {
       if (profile?.usersId) {
         sessionStorage.setItem('trustee_user_id', profile.usersId);
       }
+
       if (profile?.id) {
         sessionStorage.setItem('trustee_profile_id', profile.id);
       }
 
       if (!progress.includes('trustee_kyc')) {
-        router.push(paths.kycBasicInfo);
-        return;
-      }
-      if (!progress.includes('trustee_documents')) {
-        router.push(paths.kycCompanyDetails);
-        return;
-      }
-      if (!progress.includes('trustee_bank_details')) {
-        router.push(paths.KYCBankDetails);
-        return;
-      }
-      if (!progress.includes('trustee_authorized_signatories')) {
-        router.push(paths.KYCSignatories);
+        router.push(paths.auth.kyc.kycBasicInfo);
         return;
       }
 
-      router.push(paths.KYCPending);
+      router.push(paths.auth.kyc.trusteeKyc);
+      return;
+
     } catch (err) {
       console.error('KYC Progress Fetch Error:', err);
       enqueueSnackbar('Unable to fetch KYC progress', { variant: 'error' });

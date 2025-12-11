@@ -36,6 +36,12 @@ const FirebaseForgotPasswordPage = lazy(() => import('src/pages/auth/firebase/fo
 const Auth0LoginPage = lazy(() => import('src/pages/auth/auth0/login'));
 const Auth0Callback = lazy(() => import('src/pages/auth/auth0/callback'));
 
+// kyc pages
+const TrusteeKycPage = lazy(() => import('src/pages/kyc/trustee-kyc'));
+const KycBasicInfoPage = lazy(() => import('src/pages/kyc/kyc-basic-info'));
+const TrusteeKycSuccessPage = lazy(() => import('src/pages/kyc/kyc-sucessfull'));
+const TrusteeKycPendingPage = lazy(() => import('src/pages/kyc/kyc-pending'));
+
 // ----------------------------------------------------------------------
 
 const authAmplify = {
@@ -192,9 +198,36 @@ const authAuth0 = {
   ],
 };
 
+const authKyc = {
+  path: 'kyc',
+  element: (
+    <Suspense fallback={<SplashScreen />}>
+      <Outlet />
+    </Suspense>
+  ),
+  children: [
+    {
+      path: 'trustee-kyc',
+      element: <TrusteeKycPage />,
+    },
+    {
+      path: 'basic-info',
+      element: <KycBasicInfoPage />,
+    },
+    {
+      path: 'kyc-successful', 
+      element: <TrusteeKycSuccessPage />,
+    },
+    {
+      path: 'kyc-pending',  
+      element: <TrusteeKycPendingPage />,
+    }
+  ],
+};
+
 export const authRoutes = [
   {
     path: 'auth',
-    children: [authAmplify, authJwt, authFirebase, authAuth0],
+    children: [authAmplify, authJwt, authFirebase, authAuth0, authKyc],
   },
 ];

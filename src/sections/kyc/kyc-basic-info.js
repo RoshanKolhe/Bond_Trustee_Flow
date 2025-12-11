@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import * as Yup from 'yup';
 import { useMemo, useEffect, useState } from 'react';
 import { useSnackbar } from 'src/components/snackbar';
@@ -14,7 +13,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Card, IconButton, InputAdornment } from '@mui/material';
+import { Card } from '@mui/material';
 // sections
 import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
@@ -23,15 +22,12 @@ import { countries } from 'src/assets/data';
 // components
 import Iconify from 'src/components/iconify';
 import FormProvider, { RHFTextField, RHFSelect, RHFAutocomplete } from 'src/components/hook-form';
-import { useNavigate } from 'react-router';
 import axiosInstance from 'src/utils/axios';
 import dayjs from 'dayjs';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import YupErrorMessage from 'src/components/error-field/yup-error-messages';
-import { useGetSectors } from 'src/api/sector';
 import { useGetTrusteeEntityTypes } from 'src/api/entityType';
 import { paths } from 'src/routes/paths';
-import { useBoolean } from 'src/hooks/use-boolean';
 import { useRouter } from 'src/routes/hook';
 import { useGetKycProgress } from 'src/api/trusteeKyc';
 
@@ -39,16 +35,11 @@ import { useGetKycProgress } from 'src/api/trusteeKyc';
 
 export default function KYCBasicInfo() {
   const { enqueueSnackbar } = useSnackbar();
-  const navigate = useNavigate();
   const router = useRouter();
   const storedProfileId = sessionStorage.getItem('trustee_user_id');
 
   const sessionId = localStorage.getItem('sessionId');
-  const {
-    kycProgress,
-    profileId: fetchedProfileId,
-    kycProgressLoading,
-  } = useGetKycProgress(sessionId);
+  const { kycProgress, profileId: fetchedProfileId } = useGetKycProgress(sessionId);
 
   const profileId = storedProfileId || fetchedProfileId;
   console.log('KYCBasicInfo profileId:', profileId);
@@ -58,9 +49,7 @@ export default function KYCBasicInfo() {
   const [uploadedPanFile, setUploadedPanFile] = useState(null);
   const isPanUploaded = Boolean(uploadedPanFile);
   // State to store mapped API values
-  const [sectorOptions, setSectorOptions] = useState([]);
   const [entityOptions, setEntityOptions] = useState([]);
-  const { Sectors, SectorsEmpty } = useGetSectors();
   const { EntityTypes, EntityTypesEmpty } = useGetTrusteeEntityTypes();
 
   const [humanInteraction, setHumanInteraction] = useState({
@@ -72,7 +61,6 @@ export default function KYCBasicInfo() {
     state: false,
     country: false,
     panNumber: false,
-    dateOfBirth: false,
     panHoldersName: false,
     sebiRegistrationNumber: false,
     sebiValidityDate: false,
@@ -100,7 +88,6 @@ export default function KYCBasicInfo() {
     country: Yup.string().required('Country is required'),
     panFile: Yup.mixed().required('PAN file is required'),
     panNumber: Yup.string().required('PAN Number is required'),
-    dateOfBirth: Yup.date().required('Date Of Birth is required'),
     panHoldersName: Yup.string().required("PAN Holder's Name is required"),
     companyEntityTypeId: Yup.string().required('Entity Type is required'),
   });
@@ -119,7 +106,6 @@ export default function KYCBasicInfo() {
       country: 'India',
       panFile: null,
       panNumber: '',
-      dateOfBirth: null,
       panHoldersName: '',
       panCardDocumentId: '',
       companyEntityTypeId: '',
@@ -167,13 +153,9 @@ export default function KYCBasicInfo() {
 
       // Adjust these keys according to your actual API response
       const panNumberFromApi = panData?.extractedPanNumber || '';
-      const dobFromApi =
-        panData.extractedDateOfBirth && panData.extractedDateOfBirth !== ''
-          ? panData.extractedDateOfBirth
-          : null;
       const panHolderNameFromApi = panData?.extractedPanHolderName || '';
 
-      if (!panNumberFromApi && !dobFromApi && !panHolderNameFromApi) {
+      if (!panNumberFromApi && !panHolderNameFromApi) {
         // Treat as failure if nothing useful came back
         setPanExtractionStatus('failed');
         enqueueSnackbar(
@@ -198,18 +180,10 @@ export default function KYCBasicInfo() {
         });
       }
 
-      if (dobFromApi) {
-        setValue('dateOfBirth', dayjs(dobFromApi).toDate(), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
-
       // Save extracted details in state for final payload
       const extracted = {
         extractedTrusteeName: panHolderNameFromApi || '',
         extractedPanNumber: panNumberFromApi || '',
-        extractedDateOfBirth: (dobFromApi && dobFromApi !== '') ? dobFromApi : null,
       };
 
       setExtractedPanDetails(extracted);
@@ -233,17 +207,13 @@ export default function KYCBasicInfo() {
       const dateOfIncorporationStr = formData.dateOfIncorporation
         ? dayjs(formData.dateOfIncorporation).format('YYYY-MM-DD')
         : '';
-
-      const dobStr = formData.dateOfBirth ? dayjs(formData.dateOfBirth).format('YYYY-MM-DD') : '';
-
       // Detect if user changed PAN fields manually
       let humanEdited = false;
 
       if (extractedPanDetails) {
         humanEdited =
           extractedPanDetails.extractedTrusteeName !== formData.panHoldersName ||
-          extractedPanDetails.extractedPanNumber !== formData.panNumber ||
-          extractedPanDetails.extractedDateOfBirth !== dobStr;
+          extractedPanDetails.extractedPanNumber !== formData.panNumber;
       }
 
       // Build extracted PAN object
@@ -251,12 +221,10 @@ export default function KYCBasicInfo() {
         ? {
             extractedTrusteeName: extractedPanDetails.extractedTrusteeName || '',
             extractedPanNumber: extractedPanDetails.extractedPanNumber || '',
-            extractedDateOfBirth: extractedPanDetails.extractedDateOfBirth || '',
           }
         : {
             extractedTrusteeName: formData.panHoldersName,
             extractedPanNumber: formData.panNumber,
-            extractedDateOfBirth: dobStr,
           };
 
       // Build submitted PAN object
@@ -264,12 +232,10 @@ export default function KYCBasicInfo() {
         ? {
             submittedTrusteeName: formData.panHoldersName,
             submittedPanNumber: formData.panNumber,
-            submittedDateOfBirth: dobStr,
           }
         : {
             submittedTrusteeName: formData.panHoldersName,
             submittedPanNumber: formData.panNumber,
-            submittedDateOfBirth: dobStr,
           };
 
       // FINAL API PAYLOAD — 100% MATCHES THE API FORMAT YOU GAVE
@@ -317,7 +283,7 @@ export default function KYCBasicInfo() {
         });
 
         reset();
-        router.push(paths.kycCompanyDetails);
+        router.push(paths.auth.kyc.trusteeKyc);
       } else {
         throw new Error(response?.data?.message || 'Registration failed');
       }
@@ -379,12 +345,6 @@ export default function KYCBasicInfo() {
         panNumber:
           p?.trusteePanCards?.submittedPanNumber || p?.trusteePanCards?.extractedPanNumber || '',
 
-        dateOfBirth: p?.trusteePanCards?.submittedDateOfBirth
-          ? dayjs(p.trusteePanCards.submittedDateOfBirth).toDate()
-          : p?.trusteePanCards?.extractedDateOfBirth
-          ? dayjs(p.trusteePanCards.extractedDateOfBirth).toDate()
-          : null,
-
         panHoldersName:
           p?.trusteePanCards?.submittedTrusteeName ||
           p?.trusteePanCards?.extractedTrusteeName ||
@@ -411,98 +371,109 @@ export default function KYCBasicInfo() {
             '',
           extractedPanNumber:
             p?.trusteePanCards?.extractedPanNumber || p?.trusteePanCards?.submittedPanNumber || '',
-          extractedDateOfBirth:
-            p?.trusteePanCards?.extractedDateOfBirth ||
-            p?.trusteePanCards?.submittedDateOfBirth ||
-            '',
         });
       }
     }
   }, [kycProgress, reset, setValue]);
 
   return (
-    <Container>
-      <KYCTitle
-        title="Welcome to Bond Issuer"
-        subtitle={"Let's get you started please provide your details"}
-      />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* <KYCTitle
+      title="Basic Information"
+      subtitle="Please provide your company details to proceed"
+    /> */}
 
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <Card
           sx={{
-            p: { xs: 2, sm: 3, md: 4 }, // responsive padding
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            borderRadius: 2,
-            bgcolor: 'background.paper',
+            p: 4,
+            borderRadius: 3,
+            width: '100%',
+            boxShadow: '0px 8px 25px rgba(0,0,0,0.08)',
+            position: 'relative',
+            overflow: 'hidden',
+            minHeight: 600,
           }}
         >
-          <Grid container spacing={3} sx={{ py: 4 }}>
-            <Grid xs={12} md={6} order={{ xs: 2, md: 1 }}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:card-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    CIN*
-                  </Box>
-                </Box>
+          {/* Background Image */}
+          <Box
+            component="img"
+            src="/assets/images/kyc/kyc-basic-info/kyc-img.svg"
+            alt="background"
+            sx={{
+              position: 'absolute',
+              right: 0,
+              bottom: '10%',
+              height: '100%',
+              width: '100%',
+              opacity: 0.1,
+              objectFit: 'contain',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* CONTENT WRAPPER */}
+          <Box sx={{ position: 'relative', zIndex: 10 }}>
+            {/* TITLE */}
+            <Stack spacing={0.5} alignItems="flex-start" sx={{ mb: 4 }}>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 700,
+                  color: '#206CFE',
+                  textAlign: 'left',
+                }}
+              >
+                Company Basic Information
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 500,
+                  color: '#000000',
+                  textAlign: 'left',
+                }}
+              >
+                Please provide your company details to proceed
+              </Typography>
+            </Stack>
+
+            {/* 3 Fields in One Row */}
+            <Grid container spacing={3}>
+              <Grid xs={12} md={4}>
                 <RHFTextField
                   name="cin"
-                  placeholder="Enter your CIN"
+                  label="CIN *"
+                  placeholder="Enter CIN"
                   InputProps={{
                     endAdornment: (
                       <Button
-                        variant="contained"
                         size="small"
+                        variant="contained"
                         sx={{
-                          bgcolor: '#00328A',
-                          color: 'white',
                           textTransform: 'none',
-                          fontWeight: 600,
-                          borderRadius: '6px',
+                          bgcolor: 'primary.main',
+                          color: 'white',
                           ml: 1,
-                          minHeight: '32px',
-                          lineHeight: 1,
-                          px: 2,
-                          '&:hover': { bgcolor: '#00328A' },
                         }}
                         onClick={async () => {
-                          const cinValue = getValues('cin');
-
-                          if (!cinValue) {
-                            enqueueSnackbar('Please enter a CIN before fetching.', {
-                              variant: 'warning',
-                            });
+                          const cin = getValues('cin');
+                          if (!cin) {
+                            enqueueSnackbar('Enter CIN first.', { variant: 'warning' });
                             return;
                           }
-
                           try {
-                            const response = await axiosInstance.post('/extraction/company-info', {
-                              CIN: cinValue,
+                            const res = await axiosInstance.post('/extraction/company-info', {
+                              CIN: cin,
                             });
-
-                            const data = response?.data?.data;
-
-                            if (response.data.success && data) {
-                              // ⭐ Correct mapping based on your API response
-
-                              setValue('companyName', data.companyName || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-
-                              setValue('gstin', data.gstin || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-
+                            const data = res?.data?.data;
+                            if (res.data.success && data) {
+                              setValue('companyName', data.companyName || '');
+                              setValue('gstin', data.gstin || '');
                               setValue(
                                 'dateOfIncorporation',
-                                data.dateOfIncorporation
-                                  ? new Date(data.dateOfIncorporation)
-                                  : null,
-                                { shouldValidate: true, shouldDirty: true }
+                                data.dateOfIncorporation ? new Date(data.dateOfIncorporation) : null
                               );
-
                               setValue('city', data.cityOfIncorporation || '', {
                                 shouldValidate: true,
                                 shouldDirty: true,
@@ -518,26 +489,10 @@ export default function KYCBasicInfo() {
                                 shouldDirty: true,
                               });
 
-                              setValue('panNumber', data.companyPanNumber || '', {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-
-                              enqueueSnackbar('CIN details extracted successfully', {
-                                variant: 'success',
-                              });
-                            } else {
-                              throw new Error(
-                                response.data.message || 'Failed to extract CIN details'
-                              );
+                              enqueueSnackbar('CIN details fetched!', { variant: 'success' });
                             }
-                          } catch (error) {
-                            console.error('Error extracting CIN:', error);
-                            enqueueSnackbar(
-                              error?.response?.data?.message ||
-                                'Failed to fetch CIN data. Please check CIN and try again.',
-                              { variant: 'error' }
-                            );
+                          } catch (err) {
+                            enqueueSnackbar('Unable to fetch CIN details', { variant: 'error' });
                           }
                         }}
                       >
@@ -546,92 +501,37 @@ export default function KYCBasicInfo() {
                     ),
                   }}
                 />
-              </Box>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:buildings-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Legal Entity Name* (As per Adhar)
-                  </Box>
-                </Box>
+              </Grid>
+
+              <Grid xs={12} md={4}>
                 <RHFTextField
                   name="companyName"
-                  placeholder="Enter your Company Name"
-                  onFocus={() => handleHumanInteraction('companyName')}
+                  label="Legal Entity Name *"
+                  placeholder="Company Name"
                 />
-              </Box>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="material-symbols:percent" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    GSTIN*
-                  </Box>
-                </Box>
-                <RHFTextField
-                  name="gstin"
-                  placeholder="Enter your GSTIN"
-                  onFocus={() => handleHumanInteraction('gstin')}
-                />
-              </Box>
-            </Grid>
-            <Grid xs={12} md={6} order={{ xs: 1, md: 2 }}>
-              <Box
-                sx={{
-                  height: { xs: 'auto', md: 'calc(3.82 * (56px + 24px))' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mb: { xs: 0, md: 3 },
-                }}
-              >
-                <Box
-                  component="img"
-                  src="/assets/images/kyc/kyc-basic-info/kyc-img.svg"
-                  alt="KYC Illustration"
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
-                />
-              </Box>
-            </Grid>
-          </Grid>
+              </Grid>
 
-          <Grid container spacing={3}>
-            <Grid xs={12} md={6}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:shield-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    SEBI Registration Number*
-                  </Box>
-                </Box>
+              <Grid xs={12} md={4}>
+                <RHFTextField name="gstin" label="GSTIN *" placeholder="Enter GSTIN" />
+              </Grid>
+              <Grid xs={12} md={4}>
                 <RHFTextField
                   name="sebiRegistrationNumber"
-                  placeholder="Enter your Registration Number"
+                  label="SEBI Registration Number *"
+                  placeholder="Enter Registration Number"
                 />
-              </Box>
+              </Grid>
 
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:calendar-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Date of Incorporation*
-                  </Box>
-                </Box>
+              {/* NEXT ROW - 3 fields */}
+              <Grid xs={12} md={4}>
                 <Controller
-                  name="dateOfIncorporation"
+                  name="sebiValidityDate"
                   control={control}
                   render={({ field, fieldState: { error } }) => (
                     <DatePicker
+                      label="SEBI Validity Date *"
                       value={field.value}
-                      onChange={(newValue) => {
-                        field.onChange(newValue);
-                        handleHumanInteraction('dateOfIncorporation');
-                      }}
-                      onOpen={() => handleHumanInteraction('dateOfIncorporation')}
-                      format="dd-MM-yyyy"
+                      onChange={(v) => field.onChange(v)}
                       slotProps={{
                         textField: {
                           fullWidth: true,
@@ -642,276 +542,130 @@ export default function KYCBasicInfo() {
                     />
                   )}
                 />
-              </Box>
+              </Grid>
+              <Grid xs={12} md={4}>
+                <Controller
+                  name="dateOfIncorporation"
+                  control={control}
+                  render={({ field, fieldState: { error } }) => (
+                    <DatePicker
+                      label="Date of Incorporation *"
+                      value={field.value}
+                      onChange={(v) => field.onChange(v)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!error,
+                          helperText: error?.message,
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
 
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:buildings-2-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    MSME/Udyam Registration No.*
-                  </Box>
-                </Box>
+              <Grid xs={12} md={4}>
+                <RHFTextField name="city" label="City of Incorporation*" placeholder="City" />
+              </Grid>
+
+              <Grid xs={12} md={4}>
+                <RHFSelect name="state" label="State of Incorporation*">
+                  <MenuItem value="Maharashtra">Maharashtra</MenuItem>
+                </RHFSelect>
+              </Grid>
+
+              {/* COUNTRY + ENTITY TYPE */}
+              <Grid xs={12} md={4}>
+                <RHFAutocomplete
+                  name="country"
+                  label="Country"
+                  readOnly
+                  options={['India']}
+                  getOptionLabel={(o) => o}
+                />
+              </Grid>
+
+              <Grid xs={12} md={4}>
                 <RHFTextField
                   name="msmeUdyamRegistrationNo"
-                  placeholder="Enter your MSME/Udyam Registration No."
+                  label="MSME / Udyam No. *"
+                  placeholder="Enter MSME Number"
                 />
-              </Box>
+              </Grid>
+
+              <Grid xs={12} md={4}>
+                <RHFSelect name="companyEntityTypeId" label="Entity Type *">
+                  <MenuItem value="">Select Entity Type</MenuItem>
+                  {entityOptions.map((opt) => (
+                    <MenuItem key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </MenuItem>
+                  ))}
+                </RHFSelect>
+              </Grid>
             </Grid>
-            <Grid xs={12} md={6}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Iconify icon="solar:calendar-bold" width={24} />
-                    <Box component="span" sx={{ fontWeight: 600 }}>
-                      SEBI Validity Date*
-                    </Box>
-                  </Box>
-                  <Controller
-                    name="sebiValidityDate"
-                    control={control}
-                    render={({ field, fieldState: { error } }) => (
-                      <DatePicker
-                        value={field.value}
-                        onChange={(newValue) => {
-                          field.onChange(newValue);
-                          handleHumanInteraction('sebiValidityDate');
-                        }}
-                        onOpen={() => handleHumanInteraction('sebiValidityDate')}
-                        format="dd-MM-yyyy"
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: !!error,
-                            helperText: error?.message,
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-                <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify icon="solar:map-point-bold" width={24} />
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Place of Incorporation*
-                  </Box>
-                </Box>
-                <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }}>
-                  <RHFTextField
-                    name="city"
-                    placeholder="City"
-                    sx={{ flex: 1 }}
-                    onFocus={() => handleHumanInteraction('city')}
-                  />
-                  <RHFSelect
-                    name="state"
-                    sx={{ flex: 1 }}
-                    onFocus={() => handleHumanInteraction('state')}
-                    SelectProps={{
-                      displayEmpty: true,
-                      onOpen: () => handleHumanInteraction('state'),
-                      renderValue: (selected) =>
-                        selected ? selected : <Box sx={{ color: 'text.disabled' }}>State</Box>,
-                    }}
-                  >
-                    <MenuItem value="Maharashtra">Maharashtra</MenuItem>
-                  </RHFSelect>
-                  <RHFAutocomplete
-                    name="country"
-                    placeholder="Country"
-                    sx={{ flex: 1 }}
-                    readOnly
-                    onOpen={() => handleHumanInteraction('country')}
-                    options={countries.map((country) => country.label)}
-                    getOptionLabel={(option) => option}
-                    renderOption={(props, option) => {
-                      const { code, label, phone } = countries.find(
-                        (country) => country.label === option
-                      );
-                      return (
-                        <li {...props} key={label}>
-                          <Iconify
-                            key={label}
-                            icon={`circle-flags:${code.toLowerCase()}`}
-                            width={28}
-                            sx={{ mr: 1 }}
-                          />
-                          {label} ({code}) +{phone}
-                        </li>
-                      );
-                    }}
-                  />
-                </Stack>
-              </Box>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Iconify icon="solar:buildings-2-bold" width={24} />
-                    <Box component="span" sx={{ fontWeight: 600 }}>
-                      Entity Type*
-                    </Box>
-                  </Box>
-                  <RHFSelect name="companyEntityTypeId">
-                    <MenuItem value="">Select Entity Type</MenuItem>
-                    {entityOptions.map((item) => (
-                      <MenuItem key={item.id} value={item.id}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </RHFSelect>
-                </Box>
-              </Box>
+
+            {/* ---------------------- */}
+            {/* PAN SECTION */}
+            {/* ---------------------- */}
+            <Typography variant="h6" sx={{ fontWeight: 700, mt: 5, mb: 2 }}>
+              PAN Details
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid xs={12} md={12}>
+                <RHFFileUploadBox
+                  name="panFile"
+                  label="Upload PAN Card *"
+                  acceptedTypes="pdf,jpg,jpeg,png"
+                  onDrop={async (files) => {
+                    const f = files[0];
+                    if (f) await handlePanUpload(f);
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <RHFTextField
+                  name="panNumber"
+                  label="PAN Number *"
+                  placeholder="Enter PAN Number"
+                  disabled={!isPanUploaded}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <RHFTextField
+                  name="panHoldersName"
+                  label="PAN Holder Name *"
+                  placeholder="Enter Name"
+                  disabled={!isPanUploaded}
+                />
+              </Grid>
             </Grid>
-          </Grid>
-          <Grid xs={12} md={12}>
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Iconify icon="solar:document-upload-bold" width={24} />
-                <Box component="span" sx={{ fontWeight: 600 }}>
-                  Upload PAN to Fill Details Automatically*
-                </Box>
-              </Box>
-              <RHFFileUploadBox
-                name="panFile"
-                label="Upload PAN Card"
-                icon="mdi:earth"
-                color="#1e88e5"
-                acceptedTypes="pdf,xls,docx,jpeg"
-                maxSizeMB={10}
-                existing={existingPAN}
-                onDrop={async (acceptedFiles) => {
-                  const file = acceptedFiles[0];
-                  if (file) {
-                    setValue('panFile', file, { shouldValidate: true });
-                    await handlePanUpload(file);
-                  }
+
+            {/* SUBMIT BUTTON */}
+            <Box textAlign="center" sx={{ mt: 4 }}>
+              <LoadingButton
+                type="submit"
+                variant="contained"
+                size="large"
+                loading={isSubmitting}
+                sx={{
+                  px: 6,
+                  py: 1.6,
+                  fontWeight: 600,
+                  borderRadius: 1,
                 }}
-              />
-              <YupErrorMessage name="panFile" />
-            </Box>
-          </Grid>
-          <Grid container spacing={3}>
-            {/* PAN Number (Left) */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Iconify icon="solar:card-bold" width={24} />
-                <Box component="span" sx={{ fontWeight: 600 }}>
-                  PAN Number*
-                </Box>
-              </Box>
-              <RHFTextField
-                name="panNumber"
-                placeholder="Your PAN Number"
-                disabled={!isPanUploaded}
-                onFocus={() => handleHumanInteraction('panNumber')}
-              />
-            </Grid>
-
-            {/* Date of Birth (Right) */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Iconify icon="solar:calendar-bold" width={24} />
-                <Box component="span" sx={{ fontWeight: 600 }}>
-                  Date of Birth*
-                </Box>
-              </Box>
-              <Controller
-                name="dateOfBirth"
-                control={control}
-                render={({ field, fieldState: { error } }) => (
-                  <DatePicker
-                    value={field.value}
-                    disabled={!isPanUploaded}
-                    onChange={(newValue) => {
-                      field.onChange(newValue);
-                      handleHumanInteraction('dateOfBirth');
-                    }}
-                    onOpen={() => handleHumanInteraction('dateOfBirth')}
-                    format="yyyy-MM-dd"
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        placeholder: 'DD-MM-YYYY',
-                        error: !!error,
-                        helperText: error?.message,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
-            {/* PAN Holder’s Name (Full width below) */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Iconify icon="solar:user-bold" width={24} />
-                <Box component="span" sx={{ fontWeight: 600 }}>
-                  PAN Holder's Name*
-                </Box>
-              </Box>
-              <RHFTextField
-                name="panHoldersName"
-                placeholder="Enter Name as per PAN"
-                disabled={!isPanUploaded}
-                onFocus={() => handleHumanInteraction('panHoldersName')}
-              />
-            </Grid>
-          </Grid>
-        </Card>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            mt: 4,
-            mb: 4,
-            gap: 3,
-          }}
-        >
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                component="img"
-                src="/assets/images/kyc/kyc-trust.svg"
-                alt="Trust"
-                sx={{ width: 28, height: 28 }}
-              />
-              <Typography variant="body2">
-                Trusted by{' '}
-                <Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  100+ Issuers
-                </Box>
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                component="img"
-                src="/assets/images/kyc/kyc-shield.svg"
-                alt="Security"
-                sx={{ width: 24, height: 24 }}
-              />
-              <Typography variant="body2">Your data is encrypted and secured</Typography>
+              >
+                Save & Continue
+              </LoadingButton>
             </Box>
           </Box>
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            size="large"
-            loading={isSubmitting}
-            sx={{
-              bgcolor: 'grey.800',
-              color: 'common.white',
-              borderRadius: 1,
-              px: 4,
-              py: 1.5,
-              '&:hover': { bgcolor: 'grey.900' },
-            }}
-            endIcon={<Iconify icon="eva:arrow-forward-fill" />}
-          >
-            Save & Continue
-          </LoadingButton>
-        </Box>
+        </Card>
+
+        <KYCFooter />
       </FormProvider>
-      <KYCFooter />
     </Container>
   );
 }

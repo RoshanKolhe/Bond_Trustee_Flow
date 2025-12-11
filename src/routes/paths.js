@@ -17,17 +17,6 @@ const ROOTS = {
 // ----------------------------------------------------------------------
 
 export const paths = {
-  kyc: '/trustee-kyc',
-  kycBasicInfo: '/trustee-kyc/basic-info',
-  kycCompanyDetails: '/trustee-kyc/company-details',
-  KYCBankDetails: '/trustee-kyc/bank-details',
-  KYCReviewAndSubmit: '/trustee-kyc/review-and-submit',
-  KYCSucessfull: '/trustee-kyc/sucessfull',
-  KYCSignatories: '/trustee-kyc/signatories',
-  KYCPending: '/trustee-kyc/pending',
-
-  // kycCompanyDetails: '/kyc/kyc-company-details',
-  kycAddressInfo: '/kyc/kyc-address-info',
   comingSoon: '/coming-soon',
   maintenance: '/maintenance',
   pricing: '/pricing',
@@ -85,6 +74,12 @@ export const paths = {
     },
     auth0: {
       login: `${ROOTS.AUTH}/auth0/login`,
+    },
+    kyc: {
+      trusteeKyc: `${ROOTS.AUTH}/kyc/trustee-kyc`,
+      kycBasicInfo: `${ROOTS.AUTH}/kyc/basic-info`,
+      kycSuccessful: `${ROOTS.AUTH}/kyc/kyc-successful`,
+      kycPending: `${ROOTS.AUTH}/kyc/kyc-pending`
     },
   },
   authDemo: {

@@ -1,12 +1,8 @@
-import { m } from 'framer-motion';
 import * as Yup from 'yup';
-import { styled } from '@mui/material/styles';
 import { useEffect, useState, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2';
 import LoadingButton from '@mui/lab/LoadingButton';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
@@ -21,76 +17,64 @@ import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
 
 import { useForm, useWatch } from 'react-hook-form';
-import { useRouter } from 'src/routes/hook';
-import KYCStepper from './kyc-stepper';
 import { yupResolver } from '@hookform/resolvers/yup';
 import YupErrorMessage from 'src/components/error-field/yup-error-messages';
 import axiosInstance from 'src/utils/axios';
 
 import { enqueueSnackbar } from 'notistack';
 
-import { useGetKycProgress, useGetKycSection } from 'src/api/trusteeKyc';
+import { useGetKycSection } from 'src/api/trusteeKyc';
 
 // -------------------------------------------------------------
 
-export default function KYCCompanyDetails() {
-  const router = useRouter();
-  const { profileId, loading: kycProgressLoading } = useGetKycProgress();
-
+export default function KYCCompanyDetails({ percent, setActiveStepId }) {
   const { kycSectionData, kycSectionLoading } = useGetKycSection(
     'trustee_documents',
     '/trustee-kyc/company-details'
   );
 
-  const [docs, setDocs] = useState([]);
+  const [docs, setDocs] = useState({
+    '091b9240-d614-4b88-86ca-29e21a47c504': null,
+    '63f4d91c-5b39-4e85-9941-48f27376f1dd': null,
+    '5dc2ef67-82c7-41ea-849e-362e61a4782a': null,
+    'ae2721a3-f3af-4dc8-8b64-0b1233b03523': null,
+    'ff7575eb-e42d-4677-9088-456d7b36109f': null,
+  });
 
   // -------------------------------------------------------------
   // Document mapping based on your API IDs
-  const DOCUMENT_MAP = {
-    certificate_of_incorporation: '091b9240-d614-4b88-86ca-29e21a47c504',
-    moa: '63f4d91c-5b39-4e85-9941-48f27376f1dd',
-    aoa: '5dc2ef67-82c7-41ea-849f-362e61a4782a',
-    gst_certificate: 'ae2721a3-f3af-4dc8-8b64-0b1233b03523',
-    sebi_registration_certificate: 'ff7575eb-e42d-4677-9088-456d7b36109f',
-  };
-
-  const findDoc = (docId) =>
-    docs.find((d) => d.documentId === docId && d.documentFile?.documentFile);
-
-  const formatExisting = (docObj) => {
-    if (!docObj) return null;
-
-    return {
-      name: docObj.documentFile.documentFile.fileOriginalName,
-      url: docObj.documentFile.documentFile.fileUrl,
-      status: docObj.documentFile.status,
-    };
-  };
-
-  const existingCOI = formatExisting(findDoc(DOCUMENT_MAP.certificate_of_incorporation));
-  const existingMOA = formatExisting(findDoc(DOCUMENT_MAP.moa));
-  const existingAOA = formatExisting(findDoc(DOCUMENT_MAP.aoa));
-  const existingGST = formatExisting(findDoc(DOCUMENT_MAP.gst_certificate));
-  const existingSEBI = formatExisting(findDoc(DOCUMENT_MAP.sebi_registration_certificate));
+  const DOCUMENT_MAP = useMemo(
+    () => ({
+      certificate_of_incorporation: '091b9240-d614-4b88-86ca-29e21a47c504',
+      moa: '63f4d91c-5b39-4e85-9941-48f27376f1dd',
+      aoa: '5dc2ef67-82c7-41ea-849f-362e61a4782a',
+      gst_certificate: 'ae2721a3-f3af-4dc8-8b64-0b1233b03523',
+      sebi_registration_certificate: 'ff7575eb-e42d-4677-9088-456d7b36109f',
+    }),
+    []
+  );
 
   // -------------------------------------------------------------
   // Default values include existing files shown in UploadBox
   const defaultValues = useMemo(
     () => ({
-      certificateOfIncorporation: null,
-      moaAoa: null,
-      sebiCertificate: null,
-      gstCertificate: null,
-      moaAoaType: existingAOA ? 'aoa' : 'moa',
+      certificateOfIncorporation: docs[DOCUMENT_MAP.certificate_of_incorporation]
+        ? docs[DOCUMENT_MAP.certificate_of_incorporation]
+        : null,
+      moaAoa: (docs[DOCUMENT_MAP.moa] || docs[DOCUMENT_MAP.aoa]) ?? null,
+      sebiCertificate: docs[DOCUMENT_MAP.sebi_registration_certificate] ?? null,
+      gstCertificate: docs[DOCUMENT_MAP.gst_certificate] ?? null,
+      moaAoaType: docs[DOCUMENT_MAP.moa] ? 'moa' : docs[DOCUMENT_MAP.aoa] ? 'aoa' : 'moa',
     }),
-    [existingCOI, existingMOA, existingAOA, existingGST, existingSEBI]
+    [docs, DOCUMENT_MAP]
   );
 
   // -------------------------------------------------------------
   const CompanyDetailSchema = Yup.object().shape({
-    certificateOfIncorporation: Yup.mixed().nullable(),
-    moaAoaType: Yup.string().required('Please select MoA or AoA'),
-    moaAoa: Yup.mixed().nullable(),
+    certificateOfIncorporation: Yup.mixed().required('Certificate Of Incorporation is Required'),
+    sebiCertificate: Yup.mixed().required('Sebi Certificate is Required'),
+    // moaAoaType: Yup.string().required('Please select MoA or AoA'),
+    // moaAoa: Yup.mixed().nullable(),
   });
 
   const methods = useForm({
@@ -99,7 +83,7 @@ export default function KYCCompanyDetails() {
   });
 
   const {
-    setValue,
+    reset,
     watch,
     control,
     handleSubmit,
@@ -160,7 +144,8 @@ export default function KYCCompanyDetails() {
 
       if (final?.data?.success) {
         enqueueSnackbar('Documents Uploaded Successfully', { variant: 'success' });
-        router.push(paths.KYCBankDetails);
+        percent(100);
+        setActiveStepId();
       }
     } catch (error) {
       enqueueSnackbar('Error uploading documents', { variant: 'error' });
@@ -169,30 +154,54 @@ export default function KYCCompanyDetails() {
 
   // -------------------------------------------------------------
 
-  const requiredFields = ['certificateOfIncorporation', 'moaAoa'];
-
   const calculatePercent = () => {
     let valid = 0;
-    requiredFields.forEach((field) => {
-      const value = values[field];
-      if (value && !errors[field]) valid++;
-    });
-    return Math.round((valid / requiredFields.length) * 100);
+
+    if (values.certificateOfIncorporation && !errors.certificateOfIncorporation) valid++;
+
+    if (values.sebiCertificate && !errors.sebiCertificate) valid++;
+
+    return Math.round((valid / 2) * 100);
   };
 
-  const percent = calculatePercent();
+  const localPercent = calculatePercent();
 
-  // === Map incoming GET API ===
+  useEffect(() => {
+    percent(localPercent);
+  }, [localPercent, percent]);
+
   useEffect(() => {
     if (kycSectionData && !kycSectionLoading) {
-      setDocs(kycSectionData?.data);
+      setDocs({
+        '091b9240-d614-4b88-86ca-29e21a47c504':
+          kycSectionData.data.find(
+            (doc) => doc.documentId === DOCUMENT_MAP.certificate_of_incorporation
+          )?.documentFile?.documentFile ?? null,
+        '63f4d91c-5b39-4e85-9941-48f27376f1dd':
+          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.moa)?.documentFile
+            ?.documentFile ?? null,
+        '5dc2ef67-82c7-41ea-849f-362e61a4782a':
+          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.aoa)?.documentFile
+            ?.documentFile ?? null,
+        'ae2721a3-f3af-4dc8-8b64-0b1233b03523':
+          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.gst_certificate)
+            ?.documentFile?.documentFile ?? null,
+        'ff7575eb-e42d-4677-9088-456d7b36109f':
+          kycSectionData.data.find(
+            (doc) => doc.documentId === DOCUMENT_MAP.sebi_registration_certificate
+          )?.documentFile?.documentFile ?? null,
+      });
     }
-  }, [kycSectionData, kycSectionLoading]);
+  }, [kycSectionData, kycSectionLoading, DOCUMENT_MAP]);
+
+  useEffect(() => {
+    if (docs) {
+      reset(defaultValues);
+    }
+  }, [defaultValues, reset, docs]);
 
   return (
     <Container>
-      <KYCStepper percent={percent} />
-
       <KYCTitle title="Trustee Company Details" subtitle="Submit required company documents." />
 
       <FormProvider methods={methods} onSubmit={onSubmit}>
@@ -202,10 +211,19 @@ export default function KYCCompanyDetails() {
             <RHFFileUploadBox
               name="certificateOfIncorporation"
               label="Certificate of Incorporation*"
-              existing={existingCOI}
               icon="mdi:certificate-outline"
+              existing={values.certificateOfIncorporation}
             />
             <YupErrorMessage name="certificateOfIncorporation" />
+
+            {/* ================= SEBI ================= */}
+            <RHFFileUploadBox
+              name="sebiCertificate"
+              label="SEBI Registration Certificate*"
+              icon="mdi:briefcase-outline"
+              existing={values.sebiCertificate}
+            />
+            <YupErrorMessage name="sebiCertificate" />
 
             {/* ================= MOA/AOA TYPE ================= */}
             <RHFSelect name="moaAoaType" label="Select Document Type">
@@ -218,25 +236,11 @@ export default function KYCCompanyDetails() {
               name="moaAoa"
               label={getMoaAoaLabel()}
               icon="mdi:file-document-edit-outline"
-              existing={moaAoaType === 'moa' ? existingMOA : existingAOA}
-            />
-            <YupErrorMessage name="moaAoa" />
-
-            {/* ================= SEBI ================= */}
-            <RHFFileUploadBox
-              name="sebiCertificate"
-              label="SEBI Registration Certificate"
-              icon="mdi:briefcase-outline"
-              existing={existingSEBI}
+              existing={values.moaAoa}
             />
 
             {/* ================= GST ================= */}
-            <RHFFileUploadBox
-              name="gstCertificate"
-              label="GST Certificate"
-              icon="mdi:earth"
-              existing={existingGST}
-            />
+            <RHFFileUploadBox name="gstCertificate" label="GST Certificate" icon="mdi:earth" existing={values.gstCertificate}/>
           </Box>
         </Paper>
 

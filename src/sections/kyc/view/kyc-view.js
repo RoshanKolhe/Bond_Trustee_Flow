@@ -3,7 +3,7 @@ import { useScroll } from 'framer-motion';
 // components
 import ScrollProgress from 'src/components/scroll-progress';
 //
-import KYCHero from '../kyc-hero';
+import Stepper from '../kyc-stepper';
 // ----------------------------------------------------------------------
 
 export default function KYCView() {
@@ -13,7 +13,7 @@ export default function KYCView() {
     <>
       <ScrollProgress scrollYProgress={scrollYProgress} />
 
-      <KYCHero />
+      <Stepper />
     </>
   );
 }

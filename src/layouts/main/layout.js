@@ -16,21 +16,21 @@ export default function MainLayout({ children }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 1 }}>
-      <Header />
+      {/* <Header /> */}
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           ...(!isHome && {
-            pt: { xs: 8, md: 10 },
+            pt: { xs: 4, md: 5 },
           }),
         }}
       >
         {children}
       </Box>
 
-      <Footer />
+      {/* <Footer /> */}
     </Box>
   );
 }
