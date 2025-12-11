@@ -187,7 +187,6 @@ export default function KYCBankDetails() {
 
   return (
     <Container>
-      <KYCStepper percent={percent} />
       <KYCTitle title="Bank Details" subtitle="Add your bank account information" />
 
       <FormProvider methods={methods} onSubmit={onSubmit}>

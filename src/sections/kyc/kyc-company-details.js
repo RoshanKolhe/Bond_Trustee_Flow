@@ -24,8 +24,9 @@ import axiosInstance from 'src/utils/axios';
 import { enqueueSnackbar } from 'notistack';
 
 import { useGetKycSection } from 'src/api/trusteeKyc';
+import { useGetDocumentsByScreen } from 'src/api/documentsByScreen';
 
-// -------------------------------------------------------------
+// =====================================================================
 
 export default function KYCCompanyDetails({ percent, setActiveStepId }) {
   const { kycSectionData, kycSectionLoading } = useGetKycSection(
@@ -33,107 +34,154 @@ export default function KYCCompanyDetails({ percent, setActiveStepId }) {
     '/trustee-kyc/company-details'
   );
 
-  const [docs, setDocs] = useState({
-    '091b9240-d614-4b88-86ca-29e21a47c504': null,
-    '63f4d91c-5b39-4e85-9941-48f27376f1dd': null,
-    '5dc2ef67-82c7-41ea-849e-362e61a4782a': null,
-    'ae2721a3-f3af-4dc8-8b64-0b1233b03523': null,
-    'ff7575eb-e42d-4677-9088-456d7b36109f': null,
-  });
+  const { documents, documentsLoading } = useGetDocumentsByScreen('/trustee-kyc/company-details');
 
-  // -------------------------------------------------------------
-  // Document mapping based on your API IDs
-  const DOCUMENT_MAP = useMemo(
-    () => ({
-      certificate_of_incorporation: '091b9240-d614-4b88-86ca-29e21a47c504',
-      moa: '63f4d91c-5b39-4e85-9941-48f27376f1dd',
-      aoa: '5dc2ef67-82c7-41ea-849f-362e61a4782a',
-      gst_certificate: 'ae2721a3-f3af-4dc8-8b64-0b1233b03523',
-      sebi_registration_certificate: 'ff7575eb-e42d-4677-9088-456d7b36109f',
-    }),
-    []
-  );
+  // Store file objects for uploaded docs
+  const [docs, setDocs] = useState({});
 
-  // -------------------------------------------------------------
-  // Default values include existing files shown in UploadBox
-  const defaultValues = useMemo(
-    () => ({
-      certificateOfIncorporation: docs[DOCUMENT_MAP.certificate_of_incorporation]
-        ? docs[DOCUMENT_MAP.certificate_of_incorporation]
-        : null,
-      moaAoa: (docs[DOCUMENT_MAP.moa] || docs[DOCUMENT_MAP.aoa]) ?? null,
-      sebiCertificate: docs[DOCUMENT_MAP.sebi_registration_certificate] ?? null,
-      gstCertificate: docs[DOCUMENT_MAP.gst_certificate] ?? null,
-      moaAoaType: docs[DOCUMENT_MAP.moa] ? 'moa' : docs[DOCUMENT_MAP.aoa] ? 'aoa' : 'moa',
-    }),
-    [docs, DOCUMENT_MAP]
-  );
+  // ========================= FIELD MAP ================================
+  const FIELD_MAP = {
+    certificate_of_incorporation: 'certificateOfIncorporation',
+    sebi_registration_certificate: 'sebiCertificate',
+    gst_certificate: 'gstCertificate',
+    moa: 'moaDocument',
+    aoa: 'aoaDocument',
+  };
 
-  // -------------------------------------------------------------
+  // ========================= DOCUMENT MAP =============================
+  const DOCUMENT_MAP = useMemo(() => {
+    if (!documents) return {};
+    const map = {};
+
+    documents.forEach((doc) => {
+      map[doc.value] = doc.id;
+    });
+
+    return map;
+  }, [documents]);
+
+  // ========================= DEFAULT VALUES ===========================
+  const defaultValues = useMemo(() => {
+    const result = {};
+
+    Object.keys(FIELD_MAP).forEach((backendKey) => {
+      const formField = FIELD_MAP[backendKey];
+      const docId = DOCUMENT_MAP[backendKey];
+      result[formField] = docs[docId] ?? null;
+    });
+
+    result.moaAoaType =
+      docs[DOCUMENT_MAP.moa] ? 'moa' : docs[DOCUMENT_MAP.aoa] ? 'aoa' : 'moa';
+
+    return result;
+  }, [docs, DOCUMENT_MAP]);
+
+  // ========================= YUP SCHEMA ===============================
   const CompanyDetailSchema = Yup.object().shape({
-    certificateOfIncorporation: Yup.mixed().required('Certificate Of Incorporation is Required'),
-    sebiCertificate: Yup.mixed().required('Sebi Certificate is Required'),
-    // moaAoaType: Yup.string().required('Please select MoA or AoA'),
-    // moaAoa: Yup.mixed().nullable(),
+    certificateOfIncorporation: Yup.object().required('Certificate Of Incorporation is Required'),
+    sebiCertificate: Yup.object().required('Sebi Certificate is Required'),
+    gstCertificate: Yup.object().nullable(),
+    moaDocument: Yup.object().nullable(),
+    aoaDocument: Yup.object().nullable(),
   });
+
+  // ========================= FORM HOOK ================================
 
   const methods = useForm({
     resolver: yupResolver(CompanyDetailSchema),
     defaultValues,
   });
 
-  const {
-    reset,
-    watch,
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = methods;
-  const values = watch();
+  const { reset, setValue, watch, control, handleSubmit, formState: { errors, isSubmitting } } = methods;
+
   const moaAoaType = useWatch({ control, name: 'moaAoaType' });
+  const values = watch();
 
-  // -------------------------------------------------------------
-  const getMoaAoaLabel = () =>
-    moaAoaType === 'moa' ? 'MoA - Memorandum of Association' : 'AoA - Articles of Association';
+  // =====================================================================
+  // Load existing files from KYC section
+  useEffect(() => {
+    if (!kycSectionData || kycSectionLoading) return;
 
-  // -------------------------------------------------------------
-  const onSubmit = handleSubmit(async (form) => {
+    const filled = {};
+
+    (kycSectionData.data || []).forEach((item) => {
+      const file = item?.documentFile?.documentFile ?? null;
+      filled[item.documentId] = file;
+    });
+
+    setDocs(filled);
+  }, [kycSectionData, kycSectionLoading]);
+
+  // Reset form on docs change
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
+  // =====================================================================
+  // Upload handler
+  const handleFileUpload = async (file, fieldName, backendKey) => {
     try {
-      const usersId = sessionStorage.getItem('trustee_user_id');
+      if (!file) return;
 
-      if (!usersId) {
-        enqueueSnackbar('User ID missing', { variant: 'error' });
-        return;
+      enqueueSnackbar('Uploading File...', { variant: 'info' });
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await axiosInstance.post('/files', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const uploaded = uploadRes?.data?.files?.[0];
+
+      setValue(fieldName, uploaded, { shouldValidate: true });
+
+      const docId = DOCUMENT_MAP[backendKey];
+      if (docId) {
+        setDocs((prev) => ({ ...prev, [docId]: uploaded }));
       }
 
-      const uploadList = [
-        { field: 'certificateOfIncorporation', value: 'certificate_of_incorporation' },
-        { field: 'moaAoa', value: moaAoaType === 'moa' ? 'moa' : 'aoa' },
-        { field: 'gstCertificate', value: 'gst_certificate' },
-        { field: 'sebiCertificate', value: 'sebi_registration_certificate' },
-      ];
+      enqueueSnackbar('File uploaded successfully', { variant: 'success' });
+    } catch (err) {
+      enqueueSnackbar('File upload failed', { variant: 'error' });
+    }
+  };
+
+  // =====================================================================
+  // Percent calculation
+  const calculatePercent = () => {
+    let valid = 0;
+
+    if (values.certificateOfIncorporation && !errors.certificateOfIncorporation) valid++;
+    if (values.sebiCertificate && !errors.sebiCertificate) valid++;
+
+    return Math.round((valid / 2) * 100);
+  };
+
+  useEffect(() => {
+    percent(calculatePercent());
+  }, [values, errors]);
+
+  // =====================================================================
+  // Submit handler
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      const usersId = sessionStorage.getItem('trustee_user_id');
+      if (!usersId) return enqueueSnackbar('User ID missing', { variant: 'error' });
 
       const uploadedDocuments = [];
 
-      for (const item of uploadList) {
-        const file = form[item.field];
-        if (!file) continue;
+      Object.keys(FIELD_MAP).forEach((backendKey) => {
+        const formField = FIELD_MAP[backendKey];
+        const uploaded = data[formField];
 
-        const fd = new FormData();
-        fd.append('file', file);
-
-        const res = await axiosInstance.post('/files', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-
-        const uploaded = res?.data?.files?.[0];
-        if (!uploaded?.id) continue;
-
-        uploadedDocuments.push({
-          documentsId: DOCUMENT_MAP[item.value],
-          documentsFileId: uploaded.id,
-        });
-      }
+        if (uploaded?.id) {
+          uploadedDocuments.push({
+            documentsId: DOCUMENT_MAP[backendKey],
+            documentsFileId: uploaded.id,
+          });
+        }
+      });
 
       const payload = {
         usersId,
@@ -152,54 +200,7 @@ export default function KYCCompanyDetails({ percent, setActiveStepId }) {
     }
   });
 
-  // -------------------------------------------------------------
-
-  const calculatePercent = () => {
-    let valid = 0;
-
-    if (values.certificateOfIncorporation && !errors.certificateOfIncorporation) valid++;
-
-    if (values.sebiCertificate && !errors.sebiCertificate) valid++;
-
-    return Math.round((valid / 2) * 100);
-  };
-
-  const localPercent = calculatePercent();
-
-  useEffect(() => {
-    percent(localPercent);
-  }, [localPercent, percent]);
-
-  useEffect(() => {
-    if (kycSectionData && !kycSectionLoading) {
-      setDocs({
-        '091b9240-d614-4b88-86ca-29e21a47c504':
-          kycSectionData.data.find(
-            (doc) => doc.documentId === DOCUMENT_MAP.certificate_of_incorporation
-          )?.documentFile?.documentFile ?? null,
-        '63f4d91c-5b39-4e85-9941-48f27376f1dd':
-          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.moa)?.documentFile
-            ?.documentFile ?? null,
-        '5dc2ef67-82c7-41ea-849f-362e61a4782a':
-          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.aoa)?.documentFile
-            ?.documentFile ?? null,
-        'ae2721a3-f3af-4dc8-8b64-0b1233b03523':
-          kycSectionData.data.find((doc) => doc.documentId === DOCUMENT_MAP.gst_certificate)
-            ?.documentFile?.documentFile ?? null,
-        'ff7575eb-e42d-4677-9088-456d7b36109f':
-          kycSectionData.data.find(
-            (doc) => doc.documentId === DOCUMENT_MAP.sebi_registration_certificate
-          )?.documentFile?.documentFile ?? null,
-      });
-    }
-  }, [kycSectionData, kycSectionLoading, DOCUMENT_MAP]);
-
-  useEffect(() => {
-    if (docs) {
-      reset(defaultValues);
-    }
-  }, [defaultValues, reset, docs]);
-
+  // =====================================================================
   return (
     <Container>
       <KYCTitle title="Trustee Company Details" subtitle="Submit required company documents." />
@@ -211,8 +212,12 @@ export default function KYCCompanyDetails({ percent, setActiveStepId }) {
             <RHFFileUploadBox
               name="certificateOfIncorporation"
               label="Certificate of Incorporation*"
+              existing={docs[DOCUMENT_MAP.certificate_of_incorporation]}
               icon="mdi:certificate-outline"
-              existing={values.certificateOfIncorporation}
+              maxSizeMB={2}
+              onDrop={(files) =>
+                handleFileUpload(files[0], 'certificateOfIncorporation', 'certificate_of_incorporation')
+              }
             />
             <YupErrorMessage name="certificateOfIncorporation" />
 
@@ -220,27 +225,60 @@ export default function KYCCompanyDetails({ percent, setActiveStepId }) {
             <RHFFileUploadBox
               name="sebiCertificate"
               label="SEBI Registration Certificate*"
+              existing={docs[DOCUMENT_MAP.sebi_registration_certificate]}
               icon="mdi:briefcase-outline"
-              existing={values.sebiCertificate}
+              maxSizeMB={2}
+              onDrop={(files) =>
+                handleFileUpload(files[0], 'sebiCertificate', 'sebi_registration_certificate')
+              }
             />
             <YupErrorMessage name="sebiCertificate" />
 
-            {/* ================= MOA/AOA TYPE ================= */}
+            {/* ================= MOA / AOA TYPE ================= */}
             <RHFSelect name="moaAoaType" label="Select Document Type">
               <MenuItem value="moa">MoA - Memorandum of Association</MenuItem>
               <MenuItem value="aoa">AoA - Articles of Association</MenuItem>
             </RHFSelect>
 
-            {/* ================= MOA/AOA FILE ================= */}
-            <RHFFileUploadBox
-              name="moaAoa"
-              label={getMoaAoaLabel()}
-              icon="mdi:file-document-edit-outline"
-              existing={values.moaAoa}
-            />
+            {/* ================= MOA ================= */}
+            {moaAoaType === 'moa' && (
+              <RHFFileUploadBox
+                name="moaDocument"
+                label="MoA - Memorandum of Association"
+                existing={docs[DOCUMENT_MAP.moa]}
+                icon="mdi:file-document-edit-outline"
+                maxSizeMB={2}
+                onDrop={(files) =>
+                  handleFileUpload(files[0], 'moaDocument', 'moa')
+                }
+              />
+            )}
+
+            {/* ================= AOA ================= */}
+            {moaAoaType === 'aoa' && (
+              <RHFFileUploadBox
+                name="aoaDocument"
+                label="AoA - Articles of Association"
+                existing={docs[DOCUMENT_MAP.aoa]}
+                icon="mdi:file-document-edit-outline"
+                maxSizeMB={2}
+                onDrop={(files) =>
+                  handleFileUpload(files[0], 'aoaDocument', 'aoa')
+                }
+              />
+            )}
 
             {/* ================= GST ================= */}
-            <RHFFileUploadBox name="gstCertificate" label="GST Certificate" icon="mdi:earth" existing={values.gstCertificate}/>
+            <RHFFileUploadBox
+              name="gstCertificate"
+              label="GST Certificate"
+              existing={docs[DOCUMENT_MAP.gst_certificate]}
+              icon="mdi:earth"
+              maxSizeMB={2}
+              onDrop={(files) =>
+                handleFileUpload(files[0], 'gstCertificate', 'gst_certificate')
+              }
+            />
           </Box>
         </Paper>
 

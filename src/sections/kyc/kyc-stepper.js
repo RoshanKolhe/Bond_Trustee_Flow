@@ -5,6 +5,8 @@ import ProgressStepper from 'src/components/progress-stepper/ProgressStepper';
 import KYCCompanyDetails from './kyc-company-details';
 import KYCBankDetails from './kyc-bank-details';
 import KYCSignatories from './kyc-signatories';
+import { AnimatePresence } from 'framer-motion';
+import { m } from 'framer-motion';
 
 export default function Stepper() {
   const steps = [
@@ -79,11 +81,18 @@ export default function Stepper() {
         onStepClick={handleStepClick}
       />
 
-      <Stack sx={{ mt: 3 }}>{renderForm()}</Stack>
+      <Stack sx={{ mt: 3 }}>
+        <AnimatePresence mode="wait">
+          <m.div
+            key={activeStepId}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            {renderForm()}
+          </m.div>
+        </AnimatePresence>
+      </Stack>
     </Box>
   );
 }
-
-export const kycUpdatePercent = (stepperFunc, stepId, percent) => {
-  stepperFunc(stepId, percent);
-};
