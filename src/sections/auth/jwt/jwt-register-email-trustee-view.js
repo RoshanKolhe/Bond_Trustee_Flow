@@ -8,7 +8,7 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
-import { Card, Grid, TextField } from '@mui/material';
+import { Button, Card, Grid, TextField } from '@mui/material';
 import { useRouter, useSearchParams } from 'src/routes/hook';
 import { useSnackbar } from 'src/components/snackbar';
 import axiosInstance from 'src/utils/axios';
@@ -66,6 +66,8 @@ export default function JwtRegisterTrusteeByEmailView() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState(Array(4).fill(''));
   const [otpStarted, setOtpStarted] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [canResend, setCanResend] = useState(false);
   const otpRefs = useRef([]);
 
   const searchParams = useSearchParams();
@@ -91,6 +93,22 @@ export default function JwtRegisterTrusteeByEmailView() {
     getValues,
   } = methods;
 
+  const startTimer = () => {
+    setTimer(60);
+    setCanResend(false);
+
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleSendOtp = async () => {
     const validEmail = await trigger('email');
     if (!validEmail) return;
@@ -114,8 +132,27 @@ export default function JwtRegisterTrusteeByEmailView() {
       setOtp(Array(4).fill(''));
       setOtpStarted(false);
       setIsOtpSent(true);
+      startTimer();
     } catch (err) {
       setErrorMsg(err?.response?.data?.message || 'Failed to send OTP');
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const email = getValues('email');
+    const sessionId = localStorage.getItem('sessionId');
+
+    try {
+      await axiosInstance.post('/auth/send-email-otp', { sessionId, email });
+
+      enqueueSnackbar('OTP resent successfully!', { variant: 'success' });
+
+      setOtp(Array(4).fill(''));
+      otpRefs.current[0]?.focus();
+
+      startTimer();
+    } catch (err) {
+      setErrorMsg('Failed to resend OTP');
     }
   };
 
@@ -198,13 +235,10 @@ export default function JwtRegisterTrusteeByEmailView() {
   return (
     <Card sx={{ p: 3 }}>
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <Typography variant="h4">Register with Email</Typography>
+        <Typography variant="h4">Basic Details</Typography>
 
         <Stack direction="row" spacing={0.5}>
-          <Typography variant="body2">Already have an account?</Typography>
-          <Link href={paths.auth.jwt.login} component={RouterLink} variant="subtitle2">
-            Sign in
-          </Link>
+          <Typography variant="body2">Important updates will be sent to this email</Typography>
         </Stack>
       </Stack>
 
@@ -234,6 +268,24 @@ export default function JwtRegisterTrusteeByEmailView() {
 
           {/* OTP Boxes */}
           {isOtpSent && renderOtpBoxes}
+
+          {/* RESEND TIMER */}
+          {isOtpSent && (
+            <Typography variant="body2" textAlign="start">
+              {!canResend ? (
+                <>
+                  Resend OTP after <b>{timer}</b> seconds
+                </>
+              ) : (
+                <>
+                  Didn't receive OTP?{' '}
+                  <Button variant="text" onClick={handleResendOtp}>
+                    Resend OTP
+                  </Button>
+                </>
+              )}
+            </Typography>
+          )}
 
           {/* VERIFY BUTTON */}
           <LoadingButton

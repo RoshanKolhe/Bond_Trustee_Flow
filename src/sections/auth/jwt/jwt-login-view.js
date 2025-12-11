@@ -107,10 +107,10 @@ export default function JwtLoginView() {
     <Stack spacing={2.5}>
       {!!errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
-      <Typography variant="h4" sx={{ display: 'flex', justifyContent: 'center' }}>
-        Login
+      <Typography variant="h4" sx={{ display: 'flex', justifyContent: 'start' }}>
+        Sign In to Trustee Portal
       </Typography>
-      <Typography variant="body1" sx={{ textAlign: 'center' }}>
+      <Typography variant="body1" sx={{ textAlign: 'star' }}>
         Log in securely to manage your account, protect your personal information, and stay safe
         with advanced security features
       </Typography>
