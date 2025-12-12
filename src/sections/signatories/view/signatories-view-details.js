@@ -28,7 +28,7 @@ export default function SignatoiresDetailsView() {
       <CustomBreadcrumbs
         links={[
           { name: 'Dashboard', href: paths.dashboard.root },
-          { name: 'Details', href: paths.dashboard.signatories.root },
+          { name: 'Signatories', href: paths.dashboard.signatories.root },
           {
             name: signatorie?.fullName || ''
 

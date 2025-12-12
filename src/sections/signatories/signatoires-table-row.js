@@ -6,7 +6,7 @@ import TableCell from '@mui/material/TableCell';
 import ListItemText from '@mui/material/ListItemText';
 // utils
 import { format } from 'date-fns';
-import { Chip, IconButton, Tooltip } from '@mui/material';
+import { Box, Chip, IconButton, Tooltip } from '@mui/material';
 import Iconify from 'src/components/iconify';
 import { color } from 'framer-motion';
 
@@ -17,16 +17,24 @@ const statusMap = {
   0: { label: 'Pending', color: 'warning' },
 };
 
-
 export default function SignatoriesTableRow({ row, selected, onSelectRow, onViewRow, onEditRow }) {
-  const { fullName, email, roleValue, phone, extractedDateOfBirth, panCardFile, boardResolutionFile, status } = row;
+  const {
+    fullName,
+    email,
+    designationValue,
+    phone,
+    submittedDateOfBirth,
+    panCardFile,
+    boardResolutionFile,
+    status,
+  } = row;
 
   return (
     <TableRow hover selected={selected}>
       <TableCell>{fullName || 'NA'}</TableCell>
 
       <TableCell>{email || 'NA'}</TableCell>
-      <TableCell>{roleValue || 'NA'}</TableCell>
+      <TableCell>{designationValue || 'NA'}</TableCell>
       <TableCell>{phone || 'NA'}</TableCell>
       {/* <TableCell>
         <ListItemText
@@ -40,7 +48,9 @@ export default function SignatoriesTableRow({ row, selected, onSelectRow, onView
           }}
         />
       </TableCell> */}
-      <TableCell>{extractedDateOfBirth || 'NA'} </TableCell>
+      <TableCell>
+        {submittedDateOfBirth ? format(new Date(submittedDateOfBirth), 'yyyy-MM-dd') : 'NA'}
+      </TableCell>
       <TableCell>
         {panCardFile?.fileUrl ? (
           <a
@@ -73,16 +83,23 @@ export default function SignatoriesTableRow({ row, selected, onSelectRow, onView
         <Chip label={statusMap[status].label} color={statusMap[status].color} variant="soft" />
       </TableCell>
       <TableCell>
-        {/* <Tooltip title="View Events">
+        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+          {/* <Tooltip title="View Events">
             <IconButton onClick={onViewRow}>
               <Iconify icon="carbon:view-filled" />
             </IconButton>
           </Tooltip> */}
-        <Tooltip title="View" placement="top" arrow>
-          <IconButton onClick={onViewRow}>
-            <Iconify icon="mdi:eye" width={20} />
-          </IconButton>
-        </Tooltip>
+          <Tooltip title="Edit" placement="top" arrow>
+            <IconButton onClick={onEditRow}>
+              <Iconify icon="mdi:pencil" width={20} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="View" placement="top" arrow>
+            <IconButton onClick={onViewRow}>
+              <Iconify icon="mdi:eye" width={20} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </TableCell>
     </TableRow>
   );

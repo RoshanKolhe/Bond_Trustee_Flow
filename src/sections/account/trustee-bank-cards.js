@@ -83,6 +83,18 @@ export default function BankDetailsCard({ bank, refreshBankDetail, onViewRow }) 
             color: STATUS[bank?.status]?.color,
             fontWeight: 600,
             px: 1.5,
+            '&:hover': {
+              backgroundColor: `${STATUS[bank?.status]?.color}1A !important`,
+            },
+            '& .MuiChip-action': {
+              pointerEvents: 'none',
+            },
+            '& .MuiChip-action:hover': {
+              backgroundColor: `${STATUS[bank?.status]?.color}1A !important`,
+            },
+            '& .MuiChip-root:hover': {
+              backgroundColor: `${STATUS[bank?.status]?.color}1A !important`,
+            },
           }}
         />
       </Stack>

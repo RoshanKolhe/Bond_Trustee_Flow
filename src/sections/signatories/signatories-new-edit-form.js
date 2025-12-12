@@ -24,12 +24,23 @@ import axiosInstance from 'src/utils/axios';
 import { Card, Grid } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hook';
+import { format } from 'date-fns';
 
 const ROLES = [
   { value: 'DIRECTOR', label: 'Director' },
-  { value: 'SIGNATORY', label: 'Signatory' },
+  { value: 'MANAGING_DIRECTOR', label: 'Managing Director (MD)' },
+  { value: 'WHOLETIME_DIRECTOR', label: 'Whole-Time Director' },
+  { value: 'CFO', label: 'Chief Financial Officer (CFO)' },
+  { value: 'CEO', label: 'Chief Executive Officer (CEO)' },
+  { value: 'AUTHORISED_SIGNATORY', label: 'Authorised Signatory' },
+  { value: 'PARTNER', label: 'Partner' },
+  { value: 'TRUSTEE', label: 'Trustee' },
+  { value: 'PROPRIETOR', label: 'Proprietor' },
+  { value: 'COMPANY_SECRETARY', label: 'Company Secretary (CS)' },
   { value: 'MANAGER', label: 'Manager' },
-  { value: 'OTHER', label: 'Other' }, // ✅ Add this
+  { value: 'AUTHORIZED_REPRESENTATIVE', label: 'Authorized Representative' },
+  { value: 'NOMINEE', label: 'Nominee' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 export default function SignatoriesNewEditForm({
@@ -37,7 +48,7 @@ export default function SignatoriesNewEditForm({
   onClose,
   onSuccess,
   companyId,
-  currentUser,
+  currentSignatories,
   isViewMode,
   isEditMode,
 }) {
@@ -45,6 +56,9 @@ export default function SignatoriesNewEditForm({
   const { enqueueSnackbar } = useSnackbar();
   const [isPanUploaded, setIsPanUploaded] = useState(false);
   const [extractedPan, setExtractedPan] = useState(null);
+  const isEditing = Boolean(currentSignatories?.id);
+  const status = currentSignatories?.status;
+  const showActionButton = !isEditing || status === 0 || status === 2;
 
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
@@ -81,18 +95,24 @@ export default function SignatoriesNewEditForm({
 
   const defaultValues = useMemo(
     () => ({
-      name: currentUser?.fullName || '',
-      email: currentUser?.email || '',
-      phoneNumber: currentUser?.phone || '',
-      role: currentUser?.designationType || '',
-      panCard: '',
-      customDesignation: '',
-      boardResolution: '',
-      submittedPanFullName: '',
-      submittedPanNumber: '',
-      submittedDateOfBirth: '',
+      name: currentSignatories?.fullName || '',
+      email: currentSignatories?.email || '',
+      phoneNumber: currentSignatories?.phone || '',
+      role:
+        currentSignatories?.designationType === 'custom'
+          ? 'OTHER'
+          : ROLES.find((r) => r.label === currentSignatories?.designationValue)?.value ||
+            currentSignatories?.designationValue ||
+            '',
+      panCard: currentSignatories?.panCardFile || null,
+      boardResolution: currentSignatories?.boardResolutionFile || null,
+      submittedPanFullName: currentSignatories?.submittedPanFullName || '',
+      submittedPanNumber: currentSignatories?.submittedPanNumber || '',
+      submittedDateOfBirth: currentSignatories?.submittedDateOfBirth
+        ? new Date(currentSignatories.submittedDateOfBirth)
+        : '',
     }),
-    [currentUser]
+    [currentSignatories]
   );
 
   const methods = useForm({
@@ -214,42 +234,48 @@ export default function SignatoriesNewEditForm({
       const boardFileId = await uploadFile(data.boardResolution);
 
       const isCustom = data.role === 'OTHER';
-      const signatoryId = currentUser?.id;
+      const signatoryId = currentSignatories?.id;
 
       const payload = {
-        signatory: {
-          fullName: data.name,
-          email: data.email,
-          phone: data.phoneNumber,
+        fullName: data.name,
+        email: data.email,
+        phone: data.phoneNumber,
 
-          // Extracted PAN details (from OCR)
-          extractedPanFullName: extractedPan?.extractedPanFullName || '',
-          extractedPanNumber: extractedPan?.extractedPanNumber || '',
-          extractedDateOfBirth: extractedPan?.extractedDateOfBirth || '',
+        // Extracted PAN details (from OCR)
+        extractedPanFullName: extractedPan?.extractedPanFullName || '',
+        extractedPanNumber: extractedPan?.extractedPanNumber || '',
+        extractedDateOfBirth: extractedPan?.extractedDateOfBirth || '',
 
-          // Submitted PAN details (after human check / edit)
-          submittedPanFullName: data.submittedPanFullName,
-          submittedPanNumber: data.submittedPanNumber,
-          submittedDateOfBirth: data.submittedDateOfBirth,
+        // Submitted PAN details (after human check / edit)
+        submittedPanFullName: data.submittedPanFullName,
+        submittedPanNumber: data.submittedPanNumber,
+        submittedDateOfBirth: format(new Date(data.submittedDateOfBirth), 'yyyy-MM-dd'),
 
-          panCardFileId: panFileId,
-          boardResolutionFileId: boardFileId,
-          designationType: isCustom ? 'custom' : 'dropdown',
-          designationValue: isCustom
-            ? data.customDesignation
-            : ROLES.find((r) => r.value === data.role)?.label || data.role,
-        },
+        panCardFileId: panFileId,
+        boardResolutionFileId: boardFileId,
+        designationType: isCustom ? 'custom' : 'dropdown',
+        designationValue: isCustom
+          ? data.customDesignation
+          : ROLES.find((r) => r.value === data.role)?.label || data.role,
       };
+
+      let finalPayload;
+
+      if (!signatoryId) {
+        finalPayload = { signatory: payload };
+      } else {
+        finalPayload = payload;
+      }
 
       let res;
 
       // const res = await axiosInstance.post('/trustee-profiles/authorize-signatory', payload);
-      if (!currentUser?.id) {
-        res = await axiosInstance.post('/trustee-profiles/authorize-signatory', payload);
+      if (!currentSignatories?.id) {
+        res = await axiosInstance.post('/trustee-profiles/authorize-signatory', finalPayload);
       } else {
         res = await axiosInstance.patch(
           `/trustee-profiles/authorize-signatory/${signatoryId}`,
-          payload
+          finalPayload
         );
       }
 
@@ -270,7 +296,7 @@ export default function SignatoriesNewEditForm({
 
   useEffect(() => {
     reset(defaultValues);
-  }, [currentUser, defaultValues, reset]);
+  }, [currentSignatories, defaultValues, reset]);
 
   return (
     <Card sx={{ p: 4 }}>
@@ -338,6 +364,8 @@ export default function SignatoriesNewEditForm({
               label="Upload PAN*"
               accept="application/pdf,image/*"
               fileType="pan"
+              existingFile={isEditMode ? currentSignatories?.panCardFile?.fileOriginalName : null}
+              disabled={isViewMode}
               required={!isEditMode}
               error={!!errors.panCard}
               onDrop={async (files) => {
@@ -379,7 +407,7 @@ export default function SignatoriesNewEditForm({
                   disabled={!isPanUploaded || isViewMode}
                   value={field.value ? new Date(field.value) : null}
                   onChange={(newValue) => field.onChange(newValue)}
-                  format="dd/MM/yyyy"
+                  format="yyyy/MM/dd"
                   slotProps={{
                     textField: { fullWidth: true, error: !!error, helperText: error?.message },
                   }}
@@ -406,14 +434,14 @@ export default function SignatoriesNewEditForm({
             {isViewMode ? 'Close' : 'Cancel'}
           </Button> */}
 
-          {!isViewMode && (
+          {showActionButton && !isViewMode && (
             <Button
               type="submit"
               variant="contained"
               disabled={isSubmitting}
               startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
             >
-              {isEditMode ? 'Update' : 'Add'}
+              {isEditing ? 'Update' : 'Add'}
             </Button>
           )}
         </Box>

@@ -51,8 +51,8 @@ const STATUS_OPTIONS = [{ value: 'all', label: 'All' }];
 
 const TABLE_HEAD = [
   { id: 'fullName', label: 'Name' },
-  { id: 'roleValue', label: 'Role' },
   { id: 'email', label: 'Email' },
+  { id: 'designation', label: 'Designation' },
   { id: 'phone', label: 'Phone' },
   { id: 'extractedDateOfBirth', label: 'DOB' },
   { id: 'panCardFile', label: 'PAN' },
@@ -87,7 +87,7 @@ export default function SignatoriesListView() {
 
   const handleEditRow = useCallback(
     (id) => {
-      router.push(paths.dashboard.scheduler.edit(id));
+      router.push(paths.dashboard.signatories.edit(id));
     },
     [router]
   );

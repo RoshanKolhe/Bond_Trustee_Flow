@@ -5,7 +5,7 @@ import { paths } from 'src/routes/paths';
 // utils
 import { useParams } from 'src/routes/hook';
 // api
-import { useGetSignatories } from 'src/api/signatories';
+import { useGetSignatorie, useGetSignatories } from 'src/api/signatories';
 // components
 import { useSettingsContext } from 'src/components/settings';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
@@ -24,9 +24,9 @@ export default function SignatoriesEditView() {
 
   const { id } = params;
 
-  const {signatories: currentSignatories}=useGetSignatories(id)
+  const { signatorie } = useGetSignatorie(id);
 
- console.log('currentSignatories', currentSignatories)
+ console.log('currentSignatories', signatorie)
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
@@ -42,7 +42,7 @@ export default function SignatoriesEditView() {
             href: paths.dashboard.signatories.root,
           },
           {
-            name: currentSignatories?.platformName,
+            name: signatorie?.fullName,
           },
         ]}
         sx={{
@@ -50,7 +50,7 @@ export default function SignatoriesEditView() {
         }}
       />
 
-      <SignatoriesNewEditForm currentSignatories={currentSignatories} />
+      <SignatoriesNewEditForm currentSignatories={signatorie} />
     </Container>
   );
 }

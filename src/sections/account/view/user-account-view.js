@@ -15,14 +15,32 @@ import KYCBasicInfo from '../profile-basic-info';
 import KYCCompanyDetails from '../profile-company-details';
 import TrusteeBankPage from '../bank-detail-view';
 import AddressNewForm from '../trustee-profile-account-address';
+import { useSearchParams } from 'react-router-dom';
+import { useRouter } from 'src/routes/hook';
 
 // ----------------------------------------------------------------------
 
 const TABS = [
-  { value: 'basic', label: 'Company Basic Info' },
-  { value: 'address', label: 'Address' },
-  { value: 'details', label: 'Company Details' },
-  { value: 'bank', label: 'Bank Details' },
+  {
+    value: 'basic',
+    label: 'Company Basic Info',
+    icon: <Iconify icon="solar:user-id-bold" width={24} />,
+  },
+  {
+    value: 'address',
+    label: 'Address',
+    icon: <Iconify icon="solar:clipboard-list-bold" width={24} />,
+  },
+  {
+    value: 'details',
+    label: 'Company Details',
+    icon: <Iconify icon="solar:buildings-2-bold" width={24} />,
+  },
+  {
+    value: 'bank',
+    label: 'Bank Details',
+    icon: <Iconify icon="fluent:building-bank-16-filled" width={24} />,
+  },
   {
     value: 'security',
     label: 'Security',
@@ -34,12 +52,19 @@ const TABS = [
 
 export default function AccountView() {
   const settings = useSettingsContext();
+  const router = useRouter();
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') || 'basic';
 
-  const [currentTab, setCurrentTab] = useState('basic');
+  const [currentTab, setCurrentTab] = useState(tabFromUrl);
 
-  const handleChangeTab = useCallback((event, newValue) => {
-    setCurrentTab(newValue);
-  }, []);
+  const handleChangeTab = useCallback(
+    (event, newValue) => {
+      setCurrentTab(newValue);
+      router.push(`?tab=${newValue}`);
+    },
+    [router]
+  );
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>

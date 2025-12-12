@@ -254,31 +254,7 @@ export default function CompanyAccountGeneral() {
           }}
         >
           <Grid container spacing={3}>
-            <Grid xs={12} md={4}>
-              <Card sx={{ pt: 10, pb: 5, px: 3, textAlign: 'center' }}>
-                <RHFUploadAvatar
-                  name="companyLogo"
-                  maxSize={3145728}
-                  onDrop={handleDrop}
-                  helperText={
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        mt: 3,
-                        mx: 'auto',
-                        display: 'block',
-                        textAlign: 'center',
-                        color: 'text.disabled',
-                      }}
-                    >
-                      Allowed *.jpeg, *.jpg, *.png, *.gif
-                      <br /> max size of {fData(3145728)}
-                    </Typography>
-                  }
-                />
-              </Card>
-            </Grid>
-            <Grid xs={12} md={8}>
+            <Grid xs={12} md={12}>
               <Stack spacing={3}>
                 <Grid container spacing={3}>
                   <Grid xs={12} md={6}>
@@ -379,7 +355,7 @@ export default function CompanyAccountGeneral() {
           </Grid>
 
           {/* PAN Upload */}
-          <Grid container spacing={3}>
+          <Grid container spacing={3} sx={{ mt: 2 }}>
             <Grid item xs={12} md={6}>
               <RHFTextField
                 name="panNumber"
@@ -388,51 +364,19 @@ export default function CompanyAccountGeneral() {
                 placeholder="Your PAN Number"
               />
             </Grid>
-
-            {/* -------------------- DATE OF BIRTH -------------------- */}
-            <Grid item xs={12} md={6}>
-              <Controller
-                name="dateOfBirth"
-                control={control}
-                render={({ field, fieldState: { error } }) => (
-                  <DatePicker
-                    value={field.value}
-                    disabled
-                    onChange={(newValue) => field.onChange(newValue)}
-                    format="dd-MM-yyyy"
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        placeholder: 'DD-MM-YYYY',
-                        error: !!error,
-                        helperText: error?.message,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </Grid>
             <Grid item xs={12} md={6}>
               <RHFTextField name="panHoldersName" disabled placeholder="Enter Name as per PAN" />
             </Grid>
-            <Grid item xs={12} md={12}>
-              <RHFTextField
-                name="companyAbout"
-                placeholder="Enter abount company"
-                multiline
-                rows={4}
-              />
-            </Grid>
           </Grid>
           <Stack spacing={3} alignItems="flex-end" sx={{ mt: 3 }}>
-            <LoadingButton
+            {/* <LoadingButton
               type="submit"
               variant="contained"
               loading={isSubmitting}
               sx={{ ml: 'auto' }}
             >
               Save Changes
-            </LoadingButton>
+            </LoadingButton> */}
           </Stack>
         </Card>
       </FormProvider>
