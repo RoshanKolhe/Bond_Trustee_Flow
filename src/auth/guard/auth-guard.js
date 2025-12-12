@@ -20,12 +20,13 @@ const loginPaths = {
 export default function AuthGuard({ children }) {
   const router = useRouter();
 
-  const { authenticated, method } = useAuthContext();
+  const { authenticated, method, user, logout } = useAuthContext();
 
   const [checked, setChecked] = useState(false);
 
   const check = useCallback(() => {
-    if (!authenticated) {
+    if (!authenticated || (authenticated && !user.roles.includes('trustee'))) {
+      logout?.();
       const searchParams = new URLSearchParams({ returnTo: window.location.pathname }).toString();
 
       const loginPath = loginPaths[method];

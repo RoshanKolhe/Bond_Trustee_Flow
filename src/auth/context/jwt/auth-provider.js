@@ -65,6 +65,9 @@ export function AuthProvider({ children }) {
         const response = await axios.get(endpoints.auth.me);
 
         const user = response.data;
+        if(!user.roles.includes('trustee')){
+          logout();  
+        } 
 
         dispatch({
           type: 'INITIAL',
