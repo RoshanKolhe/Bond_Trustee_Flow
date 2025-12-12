@@ -80,9 +80,13 @@ export function useGetSignatories() {
     ? endpoints.trusteeKyc.getSection('trustee_authorized_signatories', profileId, '')
     : null;
 
-  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher, {
+  const { data, isLoading, error, isValidating, mutate } = useSWR(URL, fetcher, {
     keepPreviousData: true,
   });
+
+  const refreshSignatories = () => {
+    mutate();
+  };
 
   return {
     signatories: data?.data || [],
@@ -90,6 +94,7 @@ export function useGetSignatories() {
     error,
     validating: isValidating,
     empty: !isLoading && !data?.data?.length,
+    refreshSignatories,
   };
 }
 

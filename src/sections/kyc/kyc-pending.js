@@ -61,33 +61,16 @@ export default function KYCPending() {
         }}
       >
         <MotionContainer>
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
-            <m.div variants={varFade().inUp}>
-              <Box
-                component="img"
-                src="\assets\images\kyc\kyc-pending.svg"
-                alt="KYC Success"
-                sx={{
-                  width: 520,
-                  height: 520,
-                  mb: 3,
-                  display: 'block',
-                  mx: 'auto',
-                }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <StyledIcon>
-                  <div className="icon-container">
-                    <Icon icon="mdi:clock-time-four-outline" width="100%" height="100%" />
-                  </div>
-                  <div className="status-text">Pending Compliance Review</div>
-                </StyledIcon>
-              </div>
-            </m.div>
-          </Box>
-
           <m.div variants={varFade().inUp}>
-            <Typography variant="h5" sx={{ mb: 1, color: '#000' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <StyledIcon>
+                <div className="icon-container">
+                  <Icon icon="mdi:clock-time-four-outline" width="100%" height="100%" />
+                </div>
+                <div className="status-text">Pending Compliance Review</div>
+              </StyledIcon>
+            </div>
+            <Typography variant="h5" sx={{ mt: 2, color: '#000' }}>
               Our compliance team will review your application within{' '}
               <Box component="span" sx={{ pl: 0.2, color: 'error.main' }}>
                 2-3 business days
@@ -95,43 +78,56 @@ export default function KYCPending() {
               . You'll receive email updates on your application status.
             </Typography>
           </m.div>
-        </MotionContainer>
-      </Box>
-      <Box sx={{ textAlign: 'center', py: 6, maxWidth: 400, mx: 'auto' }}>
-        <m.div variants={varFade().inUp}>
-          <Box
-            sx={{
-              backgroundColor: 'background.paper',
-              borderRadius: 1,
-              p: 2,
-              mb: 2,
-              textAlign: 'center',
-              border: '0.8px solid #ABABAB',
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 2, color: 'text.primary', fontWeight: 'medium' }}>
-              Next Step:
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'flex-start' }}>
-              <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
-                •
-              </Box>
-              <span>You'll receive an email confirmation shortly</span>
-            </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-              <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
-                •
-              </Box>
-              <span>Our team may contact you for additional documents</span>
-            </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start' }}>
-              <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
-                •
-              </Box>
-              <span>Once approved, you can start issuing bonds</span>
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <m.div variants={varFade().inUp}>
+              <Box
+                component="img"
+                src="\assets\images\kyc\kyc-pending.svg"
+                alt="KYC Success"
+                sx={{
+                  width: 520,
+                  display: 'block',
+                  mx: 'auto',
+                  my: 5,
+                }}
+              />
+            </m.div>
           </Box>
-        </m.div>
+          <m.div variants={varFade().inUp}>
+            <Box
+              sx={{
+                backgroundColor: 'background.paper',
+                borderRadius: 1,
+                p: 2,
+                mb: 2,
+                textAlign: 'center',
+                border: '0.8px solid #ABABAB',
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 2, color: 'text.primary', fontWeight: 'medium' }}>
+                Next Step:
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'flex-start' }}>
+                <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
+                  •
+                </Box>
+                <span>You'll receive an email confirmation shortly</span>
+              </Typography>
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
+                  •
+                </Box>
+                <span>Our team may contact you for additional documents</span>
+              </Typography>
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                <Box component="span" sx={{ mr: 1, color: 'success.main' }}>
+                  •
+                </Box>
+                <span>Once approved, you can start issuing bonds</span>
+              </Typography>
+            </Box>
+          </m.div>
+        </MotionContainer>
       </Box>
     </Container>
   );

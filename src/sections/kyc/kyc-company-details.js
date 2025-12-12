@@ -110,6 +110,7 @@ export default function KYCCompanyDetails({ percent, setActiveStepId }) {
     });
 
     setDocs(filled);
+    setActiveStepId();
   }, [kycSectionData, kycSectionLoading]);
 
   // Reset form on docs change

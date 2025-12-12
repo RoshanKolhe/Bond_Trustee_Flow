@@ -24,9 +24,19 @@ import axiosInstance from 'src/utils/axios';
 
 const ROLES = [
   { value: 'DIRECTOR', label: 'Director' },
-  { value: 'SIGNATORY', label: 'Signatory' },
+  { value: 'MANAGING_DIRECTOR', label: 'Managing Director (MD)' },
+  { value: 'WHOLETIME_DIRECTOR', label: 'Whole-Time Director' },
+  { value: 'CFO', label: 'Chief Financial Officer (CFO)' },
+  { value: 'CEO', label: 'Chief Executive Officer (CEO)' },
+  { value: 'AUTHORISED_SIGNATORY', label: 'Authorised Signatory' },
+  { value: 'PARTNER', label: 'Partner' },
+  { value: 'TRUSTEE', label: 'Trustee' },
+  { value: 'PROPRIETOR', label: 'Proprietor' },
+  { value: 'COMPANY_SECRETARY', label: 'Company Secretary (CS)' },
   { value: 'MANAGER', label: 'Manager' },
-  { value: 'OTHER', label: 'Other' }, // ✅ Add this
+  { value: 'AUTHORIZED_REPRESENTATIVE', label: 'Authorized Representative' },
+  { value: 'NOMINEE', label: 'Nominee' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 export default function KYCAddSignatoriesForm({

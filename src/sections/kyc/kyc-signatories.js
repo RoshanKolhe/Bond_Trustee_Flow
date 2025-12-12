@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 // @mui
 import { styled } from '@mui/material/styles';
@@ -26,8 +26,7 @@ import { paths } from 'src/routes/paths';
 import KYCTitle from './kyc-title';
 import KYCFooter from './kyc-footer';
 import KYCAddSignatoriesForm from './kyc-add-signatories-form';
-import KYCStepper from './kyc-stepper';
-import { useGetKycProgress, useGetSignatories } from 'src/api/trusteeKyc';
+import { useGetSignatories } from 'src/api/trusteeKyc';
 
 // ----------------------------------------------------------------------
 
@@ -62,10 +61,10 @@ const rows = [
   ),
 ];
 
-export default function KYCSignatories() {
+export default function KYCSignatories({ percent, setActiveStepId }) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { signatories, loading } = useGetSignatories();
+  const { signatories, loading, refreshSignatories } = useGetSignatories();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -76,11 +75,18 @@ export default function KYCSignatories() {
     )
   );
 
-  const percent = 100;
+  useEffect(() => {
+    if (!loading && signatories && signatories.length >= 1) {
+      percent(100);
+    }
+  }, [loading, percent, setActiveStepId, signatories]);
+
+  useEffect(() => {
+    refreshSignatories();
+  }, []);
 
   return (
     <Container sx={{ position: 'relative', py: { xs: 6, sm: 8, md: 10 } }}>
-      <KYCStepper percent={percent} />
       <KYCTitle
         title="Authorized Signatories"
         subtitle={'Add director and authorized signatories for your company'}
@@ -143,7 +149,14 @@ export default function KYCSignatories() {
               Add Signatory
             </Button>
 
-            <KYCAddSignatoriesForm open={open} onClose={handleClose} />
+            <KYCAddSignatoriesForm
+              open={open}
+              onClose={handleClose}
+              onSuccess={() => {
+                refreshSignatories();
+                setOpen(false);
+              }}
+            />
           </Box>
         </Box>
         <TableContainer component={Paper} sx={{ mb: 5 }}>
@@ -225,6 +238,18 @@ export default function KYCSignatories() {
             </TableBody>
           </Table>
         </TableContainer>
+        <Box sx={{ textAlign: 'right', mt: 3 }}>
+          <Button
+            variant="contained"
+            disabled={signatories.length < 1}
+            onClick={() => {
+              percent(100);
+              setActiveStepId();
+            }}
+          >
+            Next
+          </Button>
+        </Box>
       </Box>
       <KYCFooter />
     </Container>

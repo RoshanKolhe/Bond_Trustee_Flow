@@ -7,8 +7,11 @@ import KYCBankDetails from './kyc-bank-details';
 import KYCSignatories from './kyc-signatories';
 import { AnimatePresence } from 'framer-motion';
 import { m } from 'framer-motion';
+import { useRouter } from 'src/routes/hook';
+import { paths } from 'src/routes/paths';
 
 export default function Stepper() {
+  const router = useRouter();
   const steps = [
     { id: 'kyc_company_documents', number: 1, lines: ['Company', 'Documents'] },
     { id: 'kyc_bank_details', number: 2, lines: ['Bank', 'Details'] },
@@ -63,7 +66,7 @@ export default function Stepper() {
         return (
           <KYCSignatories
             percent={(p) => updateStepPercent('kyc_signatories', p)}
-            setActiveStepId={() => setActiveStepId('kyc_signatories')}
+            setActiveStepId={() => router.push(paths.auth.kyc.kycPending)}
           />
         );
 

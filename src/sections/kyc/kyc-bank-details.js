@@ -21,15 +21,14 @@ import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import { useRouter } from 'src/routes/hook';
-import KYCStepper from './kyc-stepper';
 import { enqueueSnackbar } from 'notistack';
 import axiosInstance from 'src/utils/axios';
 import { useGetDetails } from 'src/api/trusteeKyc';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // ----------------------------------------------------------------------
 
-export default function KYCBankDetails() {
+export default function KYCBankDetails({ percent, setActiveStepId }) {
   const router = useRouter();
   const { Details: bankDetails, Loading: bankLoading } = useGetDetails();
 
@@ -45,10 +44,8 @@ export default function KYCBankDetails() {
     accountHolderName: Yup.string().required('Account Holder Name is required'),
   });
 
-  const methods = useForm({
-    resolver: yupResolver(NewSchema),
-    reValidateMode: 'onChange',
-    defaultValues: {
+  const defaultValues = useMemo(
+    () => ({
       documentType: 'cheque',
       bankName: '',
       branchName: '',
@@ -58,7 +55,14 @@ export default function KYCBankDetails() {
       addressProof: null,
       accountHolderName: '',
       bankAddress: '',
-    },
+      bankShortCode: '',
+    }),
+    []
+  );
+
+  const methods = useForm({
+    resolver: yupResolver(NewSchema),
+    defaultValues,
   });
 
   const {
@@ -87,7 +91,7 @@ export default function KYCBankDetails() {
         name: bankDetails.bankAccountProof.fileOriginalName,
         url: bankDetails.bankAccountProof.fileUrl,
         status: bankDetails.status === 1 ? 'approved' : 'pending',
-        isServerFile: true, 
+        isServerFile: true,
       }
     : null;
 
@@ -141,7 +145,8 @@ export default function KYCBankDetails() {
 
       if (res?.data?.success) {
         enqueueSnackbar('Bank details submitted successfully!', { variant: 'success' });
-        router.push(paths.KYCSignatories);
+        percent(100);
+        setActiveStepId();
       } else {
         enqueueSnackbar(res?.data?.message || 'Something went wrong!', {
           variant: 'error',
@@ -165,22 +170,24 @@ export default function KYCBankDetails() {
     });
     return Math.round((valid / requiredFields.length) * 100);
   };
-
-  const percent = calculatePercent();
+  useEffect(() => {
+    percent(calculatePercent());
+  }, [values, errors]);
 
   useEffect(() => {
-    if (bankDetails) {
+    if (bankDetails?.length > 0) {
+      setActiveStepId();
       reset({
-        documentType: bankDetails.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
-        bankName: bankDetails.bankName || '',
-        branchName: bankDetails.branchName || '',
-        accountNumber: bankDetails.accountNumber || '',
-        ifscCode: bankDetails.ifscCode || '',
-        accountType: bankDetails.accountType === 1 ? 'CURRENT' : 'SAVINGS',
-        addressProof: null,
-        accountHolderName: bankDetails.accountHolderName || '',
-        bankAddress: bankDetails.bankAddress || '',
-        bankShortCode: bankDetails.bankShortCode || '',
+        documentType: bankDetails[0]?.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
+        bankName: bankDetails[0]?.bankName || '',
+        branchName: bankDetails[0]?.branchName || '',
+        accountNumber: bankDetails[0]?.accountNumber || '',
+        ifscCode: bankDetails[0]?.ifscCode || '',
+        accountType: bankDetails[0]?.accountType === 1 ? 'CURRENT' : 'SAVINGS',
+        addressProof:  bankDetails[0]?.bankAccountProof || null,
+        accountHolderName: bankDetails[0]?.accountHolderName || '',
+        bankAddress: bankDetails[0]?.bankAddress || '',
+        bankShortCode: bankDetails[0]?.bankShortCode || '',
       });
     }
   }, [bankDetails, reset]);
