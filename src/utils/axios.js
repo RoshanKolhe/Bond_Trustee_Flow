@@ -34,6 +34,8 @@ export const endpoints = {
     me: '/auth/me',
     login: '/auth/trustee-login',
     register: '/register',
+    forgotPassword: '/auth/forget-password/send-email-otp',
+    newPassword: '/auth/forget-password/verify-email-otp',
   },
   mail: {
     list: '/api/mail/list',

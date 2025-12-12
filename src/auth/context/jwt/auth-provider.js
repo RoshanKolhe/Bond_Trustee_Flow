@@ -6,7 +6,6 @@ import axios, { endpoints } from 'src/utils/axios';
 import { AuthContext } from './auth-context';
 import { isValidToken, setSession } from './utils';
 
-
 // ----------------------------------------------------------------------
 
 // NOTE:
@@ -65,7 +64,7 @@ export function AuthProvider({ children }) {
 
         const response = await axios.get(endpoints.auth.me);
 
-        const  user  = response.data;
+        const user = response.data;
 
         dispatch({
           type: 'INITIAL',
@@ -97,10 +96,11 @@ export function AuthProvider({ children }) {
   }, [initialize]);
 
   // LOGIN
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, rememberMe) => {
     const data = {
       email,
       password,
+      rememberMe,
     };
 
     const response = await axios.post(endpoints.auth.login, data);
@@ -115,7 +115,7 @@ export function AuthProvider({ children }) {
           user,
         },
       });
-    }else throw new Error("User Doesn't have permission");
+    } else throw new Error("User Doesn't have permission");
   }, []);
 
   // REGISTER
@@ -149,6 +149,26 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  const forgotPassword = useCallback(async (email) => {
+    const payload = {
+      email,
+      role: 'trustee', // REQUIRED BY BACKEND
+    };
+
+    await axios.post(endpoints.auth.forgotPassword, payload);
+  }, []);
+
+  const newPassword = useCallback(async (email, otp, newPassword) => {
+    const payload = {
+      email,
+      otp,
+      role: 'trustee',
+      newPassword,
+    };
+
+    await axios.post(endpoints.auth.newPassword, payload);
+  }, []);
+
   // ----------------------------------------------------------------------
 
   const checkAuthenticated = state.user ? 'authenticated' : 'unauthenticated';
@@ -166,8 +186,10 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      forgotPassword,
+      newPassword,
     }),
-    [login, logout, register, state.user, status]
+    [login, logout, register, forgotPassword, newPassword, state.user, status]
   );
 
   return <AuthContext.Provider value={memoizedValue}>{children}</AuthContext.Provider>;

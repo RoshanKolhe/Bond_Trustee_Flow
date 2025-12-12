@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
+import { Button, Card, Grid, TextField } from '@mui/material';
 // routes
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
@@ -22,44 +23,36 @@ import { useAuthContext } from 'src/auth/hooks';
 import { SentIcon } from 'src/assets/icons';
 // components
 import Iconify from 'src/components/iconify';
-import FormProvider, { RHFTextField, RHFCode } from 'src/components/hook-form';
-import { Card } from '@mui/material';
-
-// ----------------------------------------------------------------------
+import FormProvider, { RHFTextField } from 'src/components/hook-form';
 
 export default function JwtNewPasswordView() {
   const { newPassword, forgotPassword } = useAuthContext();
 
   const router = useRouter();
-
   const searchParams = useSearchParams();
-
   const email = searchParams.get('email');
 
   const password = useBoolean();
-
   const { countdown, counting, startCountdown } = useCountdownSeconds(60);
 
+  const [otp, setOtp] = useState(Array(4).fill(''));
+  const otpRefs = useRef([]);
+
   const VerifySchema = Yup.object().shape({
-    code: Yup.string().min(6, 'Code must be at least 6 characters').required('Code is required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
-    password: Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .required('Password is required'),
+    email: Yup.string().required('Email is required').email('Email must be valid'),
+    password: Yup.string().min(6, 'Password must be at least 6 characters').required(),
     confirmPassword: Yup.string()
       .required('Confirm password is required')
       .oneOf([Yup.ref('password')], 'Passwords must match'),
   });
 
   const defaultValues = {
-    code: '',
     email: email || '',
     password: '',
     confirmPassword: '',
   };
 
   const methods = useForm({
-    mode: 'onChange',
     resolver: yupResolver(VerifySchema),
     defaultValues,
   });
@@ -72,10 +65,32 @@ export default function JwtNewPasswordView() {
 
   const values = watch();
 
-  const onSubmit = handleSubmit(async (data) => {
-    try {
-      await newPassword?.(data.email, data.code, data.password);
+  const handleOtpChange = (index, value) => {
+    if (/^\d?$/.test(value)) {
+      const updated = [...otp];
+      updated[index] = value;
+      setOtp(updated);
 
+      if (value && index < 3) otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpBackspace = (index) => {
+    if (index > 0 && !otp[index]) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const onSubmit = handleSubmit(async (data) => {
+    const enteredOtp = otp.join('');
+
+    if (enteredOtp.length !== 4) {
+      alert('Please enter 4-digit OTP');
+      return;
+    }
+
+    try {
+      await newPassword?.(data.email, enteredOtp, data.password);
       router.push(paths.auth.jwt.login);
     } catch (error) {
       console.error(error);
@@ -86,25 +101,59 @@ export default function JwtNewPasswordView() {
     try {
       startCountdown();
       await forgotPassword?.(values.email);
+      setOtp(Array(4).fill(''));
+      otpRefs.current[0]?.focus();
     } catch (error) {
       console.error(error);
     }
   }, [forgotPassword, startCountdown, values.email]);
 
+  const renderOtpBoxes = (
+    <Grid container spacing={2} sx={{ mt: 1, mb: 2 }}>
+      {otp.map((digit, i) => (
+        <Grid item xs={3} key={i}>
+          <TextField
+            value={digit}
+            onChange={(e) => handleOtpChange(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Backspace') handleOtpBackspace(i);
+            }}
+            inputRef={(el) => (otpRefs.current[i] = el)}
+            inputProps={{
+              maxLength: 1,
+              style: {
+                textAlign: 'center',
+                fontSize: '1.5rem'
+              },
+            }}
+          />
+        </Grid>
+      ))}
+    </Grid>
+  );
+
   const renderForm = (
     <Stack spacing={3} alignItems="center">
-      <RHFTextField
-        name="email"
-        label="Email"
-        placeholder="example@gmail.com"
-        InputLabelProps={{ shrink: true }}
-      />
+      <RHFTextField name="email" label="Email" InputLabelProps={{ shrink: true }} />
 
-      <RHFCode name="code" />
+      {renderOtpBoxes}
+
+      <Typography variant="body2">
+        {counting ? (
+          <>Resend OTP in ({countdown}s)</>
+        ) : (
+          <>
+            Didn’t get the OTP?{' '}
+            <Link variant="subtitle2" onClick={handleResendCode} sx={{ cursor: 'pointer' }}>
+              Resend
+            </Link>
+          </>
+        )}
+      </Typography>
 
       <RHFTextField
         name="password"
-        label="Password"
+        label="New Password"
         type={password.value ? 'text' : 'password'}
         InputProps={{
           endAdornment: (
@@ -142,32 +191,11 @@ export default function JwtNewPasswordView() {
         Update Password
       </LoadingButton>
 
-      <Typography variant="body2">
-        {`Don’t have a code? `}
-        <Link
-          variant="subtitle2"
-          onClick={handleResendCode}
-          sx={{
-            cursor: 'pointer',
-            ...(counting && {
-              color: 'text.disabled',
-              pointerEvents: 'none',
-            }),
-          }}
-        >
-          Resend code {counting && `(${countdown}s)`}
-        </Link>
-      </Typography>
-
       <Link
         component={RouterLink}
         href={paths.auth.jwt.login}
-        color="inherit"
         variant="subtitle2"
-        sx={{
-          alignItems: 'center',
-          display: 'inline-flex',
-        }}
+        sx={{ display: 'inline-flex', alignItems: 'center' }}
       >
         <Iconify icon="eva:arrow-ios-back-fill" width={16} />
         Return to sign in
@@ -178,16 +206,15 @@ export default function JwtNewPasswordView() {
   const renderHead = (
     <>
       <SentIcon sx={{ height: 96 }} />
-
       <Stack spacing={1} sx={{ my: 5 }}>
-        <Typography variant="h3" sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Typography variant="h3" textAlign="center">
           Verification Code Sent
         </Typography>
 
         <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-          We&apos;ve sent a 6-digit confirmation email to your email.
+          We have sent a 4-digit verification code to your email.
           <br />
-          Please enter the code in below box to verify your email.
+          Please enter the code below.
         </Typography>
       </Stack>
     </>
@@ -197,7 +224,6 @@ export default function JwtNewPasswordView() {
     <FormProvider methods={methods} onSubmit={onSubmit}>
       <Card sx={{ p: 3 }}>
         {renderHead}
-
         {renderForm}
       </Card>
     </FormProvider>
