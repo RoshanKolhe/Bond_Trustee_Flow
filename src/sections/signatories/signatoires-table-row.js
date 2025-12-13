@@ -36,49 +36,6 @@ export default function SignatoriesTableRow({ row, selected, onSelectRow, onView
       <TableCell>{email || 'NA'}</TableCell>
       <TableCell>{designationValue || 'NA'}</TableCell>
       <TableCell>{phone || 'NA'}</TableCell>
-      {/* <TableCell>
-        <ListItemText
-          primary={format(new Date(date), 'dd/MMM/yyyy')}
-          secondary={format(new Date(date), 'p')}
-          primaryTypographyProps={{ typography: 'body2', noWrap: true }}
-          secondaryTypographyProps={{
-            mt: 0.5,
-            component: 'span',
-            typography: 'caption',
-          }}
-        />
-      </TableCell> */}
-      <TableCell>
-        {submittedDateOfBirth ? format(new Date(submittedDateOfBirth), 'yyyy-MM-dd') : 'NA'}
-      </TableCell>
-      <TableCell>
-        {panCardFile?.fileUrl ? (
-          <a
-            href={panCardFile.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#1976d2', textDecoration: 'underline' }}
-          >
-            View
-          </a>
-        ) : (
-          '-'
-        )}
-      </TableCell>
-      <TableCell>
-        {boardResolutionFile?.fileUrl ? (
-          <a
-            href={boardResolutionFile.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#1976d2', textDecoration: 'underline' }}
-          >
-            View
-          </a>
-        ) : (
-          '-'
-        )}
-      </TableCell>
       <TableCell>
         <Chip label={statusMap[status].label} color={statusMap[status].color} variant="soft" />
       </TableCell>
@@ -91,7 +48,7 @@ export default function SignatoriesTableRow({ row, selected, onSelectRow, onView
           </Tooltip> */}
           <Tooltip title="Edit" placement="top" arrow>
             <IconButton onClick={onEditRow}>
-              <Iconify icon="mdi:pencil" width={20} />
+              <Iconify icon="solar:pen-bold" width={20} />
             </IconButton>
           </Tooltip>
           <Tooltip title="View" placement="top" arrow>

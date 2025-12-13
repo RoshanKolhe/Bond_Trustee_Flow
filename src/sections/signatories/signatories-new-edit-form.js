@@ -21,7 +21,7 @@ import axios from 'axios';
 import { useAuthContext } from 'src/auth/hooks';
 import { DatePicker } from '@mui/x-date-pickers';
 import axiosInstance from 'src/utils/axios';
-import { Card, Grid } from '@mui/material';
+import { Card, Grid, Typography } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hook';
 import { format } from 'date-fns';
@@ -104,8 +104,20 @@ export default function SignatoriesNewEditForm({
           : ROLES.find((r) => r.label === currentSignatories?.designationValue)?.value ||
             currentSignatories?.designationValue ||
             '',
-      panCard: currentSignatories?.panCardFile || null,
-      boardResolution: currentSignatories?.boardResolutionFile || null,
+      panCard: currentSignatories?.panCardFile
+        ? {
+            id: currentSignatories.panCardFile.id,
+            name: currentSignatories.panCardFile.fileOriginalName,
+            url: currentSignatories.panCardFile.fileUrl,
+          }
+        : null,
+      boardResolution: currentSignatories?.boardResolutionFile
+        ? {
+            id: currentSignatories.boardResolutionFile.id,
+            name: currentSignatories.boardResolutionFile.fileOriginalName,
+            url: currentSignatories.boardResolutionFile.fileUrl,
+          }
+        : null,
       submittedPanFullName: currentSignatories?.submittedPanFullName || '',
       submittedPanNumber: currentSignatories?.submittedPanNumber || '',
       submittedDateOfBirth: currentSignatories?.submittedDateOfBirth
@@ -359,6 +371,39 @@ export default function SignatoriesNewEditForm({
           )}
 
           <Grid item xs={12}>
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                  mb: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontWeight: 600 }}>Check Uploaded PanCard :</Typography>
+                </Box>
+
+                {currentSignatories?.panCardFile?.fileUrl ? (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<Iconify icon="mdi:eye" />}
+                    sx={{
+                      height: 36,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                    onClick={() => window.open(currentSignatories.panCardFile.fileUrl, '_blank')}
+                  >
+                    Preview Document
+                  </Button>
+                ) : (
+                  <Typography color="text.secondary">No file uploaded.</Typography>
+                )}
+              </Box>
+            </Box>
             <RHFFileUploadBox
               name="panCard"
               label="Upload PAN*"
@@ -417,6 +462,43 @@ export default function SignatoriesNewEditForm({
           </Grid>
 
           <Grid item xs={12}>
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                  mb: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontWeight: 600 }}>
+                    Check Uploaded Board Resolution :
+                  </Typography>
+                </Box>
+
+                {currentSignatories?.boardResolutionFile?.fileUrl ? (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<Iconify icon="mdi:eye" />}
+                    sx={{
+                      height: 36,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                    onClick={() =>
+                      window.open(currentSignatories.boardResolutionFile.fileUrl, '_blank')
+                    }
+                  >
+                    Preview Document
+                  </Button>
+                ) : (
+                  <Typography color="text.secondary">No file uploaded.</Typography>
+                )}
+              </Box>
+            </Box>
             <RHFFileUploadBox
               name="boardResolution"
               label="Board Resolution*"
