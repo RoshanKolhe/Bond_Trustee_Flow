@@ -83,7 +83,6 @@ export default function AuthClassicLayout({ children, image, title }) {
       flexGrow={1}
       alignItems="center"
       justifyContent="center"
-      spacing={10}
       sx={{
         ...bgGradient({
           // color: alpha(
@@ -97,6 +96,9 @@ export default function AuthClassicLayout({ children, image, title }) {
       {/* <Typography variant="h3" sx={{ maxWidth: 480, textAlign: 'center' }}>
         {title || 'Hi, Welcome back'}
       </Typography> */}
+      <Typography variant="h3" sx={{ display: 'flex', justifyContent: 'start' }}>
+        Welcome in To Trustee Portal
+      </Typography>
 
       <Box
         component="img"
