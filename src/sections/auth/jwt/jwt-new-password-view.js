@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
-import { Button, Card, Grid, TextField } from '@mui/material';
+import { Alert, Button, Card, Grid, TextField } from '@mui/material';
 // routes
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
@@ -27,6 +27,7 @@ import FormProvider, { RHFTextField } from 'src/components/hook-form';
 
 export default function JwtNewPasswordView() {
   const { newPassword, forgotPassword } = useAuthContext();
+  const [errorMsg, setErrorMsg] = useState('');
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,6 +95,18 @@ export default function JwtNewPasswordView() {
       router.push(paths.auth.jwt.login);
     } catch (error) {
       console.error(error);
+      const message =
+        typeof error === 'string'
+          ? error
+          : error?.error?.message || error?.message || 'Login failed';
+
+      if (message.toLowerCase().includes('email')) {
+        setErrorMsg('Email address not found');
+      } else if (message.toLowerCase().includes('password')) {
+        setErrorMsg('Incorrect password');
+      } else {
+        setErrorMsg(message);
+      }
     }
   });
 
@@ -123,7 +136,7 @@ export default function JwtNewPasswordView() {
               maxLength: 1,
               style: {
                 textAlign: 'center',
-                fontSize: '1.5rem'
+                fontSize: '1.5rem',
               },
             }}
           />
@@ -205,6 +218,11 @@ export default function JwtNewPasswordView() {
 
   const renderHead = (
     <>
+      {!!errorMsg && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errorMsg}
+        </Alert>
+      )}
       <SentIcon sx={{ height: 96 }} />
       <Stack spacing={1} sx={{ my: 5 }}>
         <Typography variant="h3" textAlign="center">
