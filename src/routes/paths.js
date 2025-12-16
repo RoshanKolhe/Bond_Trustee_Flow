@@ -125,6 +125,14 @@ export const paths = {
       edit: (id) => `${ROOTS.DASHBOARD}/signatories/${id}/edit`,
       details: (id) => `${ROOTS.DASHBOARD}/signatories/${id}`,
     },
+    pendingAppointments:{
+      root: `${ROOTS.DASHBOARD}/pendingAppointments`,
+      list: `${ROOTS.DASHBOARD}/pendingAppointments/list`,
+    },
+    assignedIssues:{
+      root: `${ROOTS.DASHBOARD}/assignedIssues`,
+      list: `${ROOTS.DASHBOARD}/assignedIssues/list`,
+    },
     trusteeProfiles: {
       root: `${ROOTS.DASHBOARD}/trusteeProfiles`,
       new: `${ROOTS.DASHBOARD}/trusteeProfiles/new`,

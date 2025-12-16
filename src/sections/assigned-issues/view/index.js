@@ -1,0 +1,1 @@
+export { default as AssignedIssuesListView} from './assigned-issues-list-view'

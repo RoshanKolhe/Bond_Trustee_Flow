@@ -31,6 +31,10 @@ const InvoiceListPage = lazy(() => import('src/pages/dashboard/invoice/list'));
 const InvoiceDetailsPage = lazy(() => import('src/pages/dashboard/invoice/details'));
 const InvoiceCreatePage = lazy(() => import('src/pages/dashboard/invoice/new'));
 const InvoiceEditPage = lazy(() => import('src/pages/dashboard/invoice/edit'));
+// PENDING APPOINTMENTS
+const PendingAppointmentsListPage = lazy(()=> import('src/pages/dashboard/pending-appointment/list'));
+// ASSIGNED ISSUES
+const AssignedIssueListPage = lazy(()=> import('src/pages/dashboard/assigned-issues/list'));
 // USER
 const UserProfilePage = lazy(() => import('src/pages/dashboard/user/profile'));
 const UserCardsPage = lazy(() => import('src/pages/dashboard/user/cards'));
@@ -165,6 +169,22 @@ export const dashboardRoutes = [
         children: [
           { element: <OrderListPage />, index: true },
           { path: 'list', element: <OrderListPage /> },
+          { path: ':id', element: <OrderDetailsPage /> },
+        ],
+      },
+          {
+        path: 'pendingAppointments',
+        children: [
+          { element: <PendingAppointmentsListPage />, index: true },
+          { path: 'list', element: <PendingAppointmentsListPage /> },
+          { path: ':id', element: <OrderDetailsPage /> },
+        ],
+      },
+         {
+        path: 'assignedIssues',
+        children: [
+          { element: <AssignedIssueListPage />, index: true },
+          { path: 'list', element: <AssignedIssueListPage /> },
           { path: ':id', element: <OrderDetailsPage /> },
         ],
       },
