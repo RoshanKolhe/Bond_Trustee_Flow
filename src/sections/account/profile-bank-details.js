@@ -8,7 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 
 // components
 import { paths } from 'src/routes/paths';
-import FormProvider, { RHFTextField, RHFSelect } from 'src/components/hook-form';
+import FormProvider, { RHFTextField, RHFSelect, RHFCustomFileUploadBox } from 'src/components/hook-form';
 import { useForm, useWatch } from 'react-hook-form';
 
 // sections
@@ -25,6 +25,10 @@ import { useGetBankDetail, useGetBankDetails } from 'src/api/trusteeKyc';
 import YupErrorMessage from 'src/components/error-field/yup-error-messages';
 
 // ----------------------------------------------------------------------
+const documentOptions = [
+  { label: 'Cheque', value: 0 },
+  { label: 'Bank Statement', value: 1 },
+]
 
 export default function KYCBankDetails() {
   const { id } = useParams();
@@ -58,7 +62,7 @@ export default function KYCBankDetails() {
 
   const defaultValues = useMemo(
     () => ({
-      documentType: bankDetails?.bankAccountProofType === 0 ? 'cheque' : 'bank_statement',
+      documentType: bankDetails?.bankAccountProofType || 0,
 
       bankName: bankDetails?.bankName || '',
       branchName: bankDetails?.branchName || '',
@@ -104,12 +108,12 @@ export default function KYCBankDetails() {
 
   const existingProof = bankDetails?.bankAccountProof
     ? {
-        id: bankDetails.bankAccountProof.id,
-        name: bankDetails.bankAccountProof.fileOriginalName,
-        url: bankDetails.bankAccountProof.fileUrl,
-        status: bankDetails.status === 1 ? 'approved' : 'pending',
-        isServerFile: true,
-      }
+      id: bankDetails.bankAccountProof.id,
+      name: bankDetails.bankAccountProof.fileOriginalName,
+      url: bankDetails.bankAccountProof.fileUrl,
+      status: bankDetails.status === 1 ? 'approved' : 'pending',
+      isServerFile: true,
+    }
     : null;
 
   const onSubmit = handleSubmit(async (data) => {
@@ -146,7 +150,7 @@ export default function KYCBankDetails() {
         accountType: data.accountType === 'CURRENT' ? 1 : 0,
         accountHolderName: data.accountHolderName,
         accountNumber: String(data.accountNumber),
-        bankAccountProofType: data.documentType === 'cheque' ? 0 : 1,
+        bankAccountProofType: Number(data.documentType),
         bankAccountProofId: uploadedProofId,
       };
 
@@ -209,13 +213,17 @@ export default function KYCBankDetails() {
               }}
               disabled={isApproved}
             >
-              <MenuItem value="cheque">Cheque</MenuItem>
-              <MenuItem value="bank_statement">Bank Statement</MenuItem>
+              {documentOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
             </RHFSelect>
           </Box>
 
           {/* ---------------- ADDRESS PROOF UPLOAD ---------------- */}
-          <RHFFileUploadBox
+          {/* <RHFFileUploadBox
+           key={documentType}
             name="addressProof"
             label={`Upload ${documentType === 'cheque' ? 'Cheque' : 'Bank Statement'}`}
             icon="mdi:file-document-outline"
@@ -225,6 +233,17 @@ export default function KYCBankDetails() {
             existing={existingProof}
             onDrop={(files) => handleDrop(files)}
             disabled={isApproved}
+          /> */}
+          <RHFCustomFileUploadBox
+            key={documentType}
+            name="addressProof"
+            label={`Upload ${documentType === 0 ? 'Cheque' : 'Bank Statement'}`}
+            icon="mdi:file-document-outline"
+          // accept={{
+          //   'application/pdf': ['.pdf'],
+          //   'application/msword': ['.doc'],
+          //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+          // }}
           />
           <YupErrorMessage name="addressProof" />
 

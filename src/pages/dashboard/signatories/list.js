@@ -9,7 +9,7 @@ export default function SignatoriesListPage() {
   return (
     <>
       <Helmet>
-        <title> Dashboard: Job List</title>
+        <title> Dashboard: Signatories List</title>
       </Helmet>
 
       {/* <MainFile /> */}

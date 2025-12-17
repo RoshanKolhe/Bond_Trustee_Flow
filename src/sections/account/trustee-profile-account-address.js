@@ -15,7 +15,7 @@ import {
   Button,
 } from '@mui/material';
 
-import FormProvider, { RHFTextField, RHFSelect } from 'src/components/hook-form';
+import FormProvider, { RHFTextField, RHFSelect, RHFCustomFileUploadBox } from 'src/components/hook-form';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -311,14 +311,17 @@ export default function AddressNewForm({ onClose }) {
               </RHFSelect>
             </Box>
 
-            <RHFFileUploadBox
+              <RHFCustomFileUploadBox
               name="addressProof"
-              // label="Upload Address Proof"
               label={`Upload ${(documentType === 'electricityBill' && 'Electricity Bill') ||
                 (documentType === 'leaseAgreement' && 'Lease Agreement')
                 }`}
-              acceptedTypes="pdf,jpg,jpeg,png"
-              maxSizeMB={10}
+              icon="mdi:file-document-outline"
+            // accept={{
+            //   'application/pdf': ['.pdf'],
+            //   'application/msword': ['.doc'],
+            //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            // }}
             />
           </Stack>
 

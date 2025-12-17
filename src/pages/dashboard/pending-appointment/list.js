@@ -8,12 +8,9 @@ export default function PendingAppointmentsListPage() {
   return (
     <>
       <Helmet>
-        <title> Dashboard: Job List</title>
+        <title> Dashboard: Pending Appointment List</title>
       </Helmet>
-
-      {/* <MainFile /> */}
-      {/* <StepFour />
-      <RoiStepper /> */}
+      
       <PendingAppointmentsCardList/>
     </>
   );

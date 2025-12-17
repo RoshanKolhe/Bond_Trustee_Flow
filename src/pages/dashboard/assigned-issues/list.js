@@ -9,7 +9,7 @@ export default function AssignedIssueListPage() {
   return (
     <>
       <Helmet>
-        <title> Dashboard: Job List</title>
+        <title> Dashboard: Assigned Issues List</title>
       </Helmet>
 
       <AssignedIssuesListView/>

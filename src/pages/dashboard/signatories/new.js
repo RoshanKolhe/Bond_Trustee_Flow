@@ -11,7 +11,7 @@ export default function SignatoriesCreatePage() {
   return (
     <>
       <Helmet>
-        <title> Dashboard: Create a new job</title>
+        <title> Dashboard: Create a new signatories</title>
       </Helmet>
 
       <SignatoriesCreateView />
