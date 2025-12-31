@@ -8,44 +8,22 @@ import {
   Card,
 } from '@mui/material';
 import { useRouter } from 'src/routes/hook/use-router';
-
-// ----------------------------------------------------------------------
-// MOCK DATA
-export const PENDING_APPOINTMENTS = [
-  {
-    id: 1,
-    companyName: 'Sunrise Infrastructure Ltd.',
-    isin: 'U35900XYZ23A4B5C60',
-    description: 'Appointment request for ₹600 Cr infrastructure bond issuance',
-    amount: '₹600 Crores',
-    tenure: '8 Years',
-    requestedDate: '10/12/2024',
-  },
-  {
-    id: 2,
-    companyName: 'Blue Ocean Logistics Pvt Ltd',
-    isin: 'U35800XYZ23A4B5C60',
-    description: 'Trustee appointment for ₹250 Cr secured NCD issuance',
-    amount: '₹250 Crores',
-    tenure: '5 Years',
-    requestedDate: '10/23/2024',
-  },
-  {
-    id: 3,
-    companyName: 'GreenField Energy Ltd.',
-    isin: 'U45900XYZ23A4B5C61',
-    description: 'Trustee appointment for renewable energy bonds',
-    amount: '₹400 Crores',
-    tenure: '10 Years',
-    requestedDate: '11/02/2024',
-  },
-];
+import { PENDING_APPOINTMENTS } from 'src/_mock/_pending';
+import { useState } from 'react';
+import PendingAppointmentsDetails from '../pending-appointments-details-view';
 
 // ----------------------------------------------------------------------
 // LIST COMPONENT
 export default function PendingAppointmentsCardList() {
   const theme = useTheme();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+
+  const handleOpen = (item) => {
+    setSelected(item);
+    setOpen(true);
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -62,6 +40,7 @@ export default function PendingAppointmentsCardList() {
         {PENDING_APPOINTMENTS.map((item) => (
           <Grid item xs={12} sm={6} md={4} key={item.id}>
             <Card
+
               sx={{
                 p: 2.5,
                 height: '100%',
@@ -74,6 +53,7 @@ export default function PendingAppointmentsCardList() {
                   boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
                 },
               }}
+              onClick={() => handleOpen(item)}
             >
               {/* Header */}
               <Box>
@@ -137,12 +117,6 @@ export default function PendingAppointmentsCardList() {
                   </Stack>
                 </Grid>
               </Grid>
-
-
-
-
-
-
               <Box
                 sx={{
                   mt: 1,
@@ -154,7 +128,7 @@ export default function PendingAppointmentsCardList() {
                 <Button
                   size="small"
                   variant="contained"
-                  onClick={() => router.push(`/appointments/${item.id}`)}
+                  onClick={() => handleOpen(item)}
                   sx={{
 
                     borderRadius: 20,
@@ -171,6 +145,11 @@ export default function PendingAppointmentsCardList() {
           </Grid>
         ))}
       </Grid>
+      <PendingAppointmentsDetails
+        open={open}
+        onClose={() => setOpen(false)}
+        data={selected}
+      />
     </Box>
 
   );
