@@ -1,7 +1,7 @@
 import * as Yup from 'yup';
 import { useMemo, useEffect, useState } from 'react';
 import { useSnackbar } from 'src/components/snackbar';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import Container from '@mui/material/Container';
@@ -21,7 +21,12 @@ import KYCFooter from './kyc-footer';
 import { countries } from 'src/assets/data';
 // components
 import Iconify from 'src/components/iconify';
-import FormProvider, { RHFTextField, RHFSelect, RHFAutocomplete } from 'src/components/hook-form';
+import FormProvider, {
+  RHFTextField,
+  RHFSelect,
+  RHFAutocomplete,
+  RHFCustomFileUploadBox,
+} from 'src/components/hook-form';
 import axiosInstance from 'src/utils/axios';
 import dayjs from 'dayjs';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
@@ -129,76 +134,10 @@ export default function KYCBasicInfo() {
     formState: { isSubmitting, errors },
   } = methods;
 
-  const handlePanUpload = async (file) => {
-    try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const uploadRes = await axiosInstance.post('/files', uploadFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const uploaded = uploadRes?.data?.files?.[0];
-      if (!uploaded || !uploaded.id) {
-        throw new Error('PAN file upload failed');
-      }
-
-      setUploadedPanFile(uploaded);
-      setValue('panCardDocumentId', uploaded.id, { shouldValidate: true });
-
-      const extractRes = await axiosInstance.post('/extract/pan-info', uploadFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const panData = extractRes?.data?.data || extractRes?.data;
-
-      // Adjust these keys according to your actual API response
-      const panNumberFromApi = panData?.extractedPanNumber || '';
-      const panHolderNameFromApi = panData?.extractedPanHolderName || '';
-
-      if (!panNumberFromApi && !panHolderNameFromApi) {
-        // Treat as failure if nothing useful came back
-        setPanExtractionStatus('failed');
-        enqueueSnackbar(
-          "We couldn't fetch details from your PAN document. Please fill the details manually.",
-          { variant: 'error' }
-        );
-        return;
-      }
-
-      // Fill form values from extraction
-      if (panHolderNameFromApi) {
-        setValue('panHoldersName', panHolderNameFromApi, {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
-
-      if (panNumberFromApi) {
-        setValue('panNumber', panNumberFromApi, {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
-
-      // Save extracted details in state for final payload
-      const extracted = {
-        extractedTrusteeName: panHolderNameFromApi || '',
-        extractedPanNumber: panNumberFromApi || '',
-      };
-
-      setExtractedPanDetails(extracted);
-      setPanExtractionStatus('success');
-
-      enqueueSnackbar('PAN details extracted successfully', { variant: 'success' });
-    } catch (error) {
-      console.error('Error in PAN upload/extraction:', error);
-      setPanExtractionStatus('failed');
-      enqueueSnackbar(
-        "We couldn't fetch details from your PAN document. Please fill the details manually.",
-        { variant: 'error' }
-      );
-    }
-  };
+  const panFile = useWatch({
+    control: methods.control,
+    name: 'panFile',
+  });
 
   const onSubmit = handleSubmit(async (formData) => {
     try {
@@ -375,6 +314,60 @@ export default function KYCBasicInfo() {
       }
     }
   }, [kycProgress, reset, setValue]);
+
+  useEffect(() => {
+    if (!panFile?.id) return;
+
+    const extractPanDetails = async () => {
+      try {
+        setPanExtractionStatus('loading');
+
+        const response = await axiosInstance.post('/extract/pan-info', {
+          fileId: panFile.id,
+        });
+
+        const data = response?.data?.data || {};
+
+        const panNumber = data?.extractedPanNumber;
+        const panName = data?.extractedPanHolderName;
+
+        if (!panNumber && !panName) {
+          setPanExtractionStatus('failed');
+          enqueueSnackbar("Couldn't extract PAN details. Please fill manually.", {
+            variant: 'error',
+          });
+          return;
+        }
+
+        if (panName) {
+          setValue('panHoldersName', panName, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+
+        if (panNumber) {
+          setValue('panNumber', panNumber, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+
+        setPanExtractionStatus('success');
+        enqueueSnackbar('PAN details extracted successfully', {
+          variant: 'success',
+        });
+      } catch (error) {
+        console.error(error);
+        setPanExtractionStatus('failed');
+        enqueueSnackbar('Unable to extract PAN details. Please fill manually.', {
+          variant: 'error',
+        });
+      }
+    };
+
+    extractPanDetails();
+  }, [panFile?.id]);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -614,13 +607,13 @@ export default function KYCBasicInfo() {
 
             <Grid container spacing={3}>
               <Grid xs={12} md={12}>
-                <RHFFileUploadBox
+                <RHFCustomFileUploadBox
                   name="panFile"
                   label="Upload PAN Card *"
-                  acceptedTypes="pdf,jpg,jpeg,png"
-                  onDrop={async (files) => {
-                    const f = files[0];
-                    if (f) await handlePanUpload(f);
+                  accept={{
+                    'application/pdf': ['.pdf'],
+                    'image/png': ['.png'],
+                    'image/jpeg': ['.jpg', '.jpeg'],
                   }}
                 />
               </Grid>

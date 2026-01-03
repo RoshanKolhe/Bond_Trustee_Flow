@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 // @mui
@@ -15,7 +15,11 @@ import DialogContent from '@mui/material/DialogContent';
 // components
 import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, { RHFSelect, RHFTextField } from 'src/components/hook-form';
+import FormProvider, {
+  RHFCustomFileUploadBox,
+  RHFSelect,
+  RHFTextField,
+} from 'src/components/hook-form';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import axios from 'axios';
 import { useAuthContext } from 'src/auth/hooks';
@@ -49,8 +53,8 @@ export default function KYCAddSignatoriesForm({
   isEditMode,
 }) {
   const { enqueueSnackbar } = useSnackbar();
-  const [isPanUploaded, setIsPanUploaded] = useState(false);
   const [extractedPan, setExtractedPan] = useState(null);
+  const [panExtractionStatus, setPanExtractionStatus] = useState('idle');
 
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
@@ -109,120 +113,52 @@ export default function KYCAddSignatoriesForm({
   const {
     reset,
     handleSubmit,
+    setValue,
     control,
     formState: { isSubmitting, errors },
   } = methods;
 
+  const panFile = useWatch({
+    control: methods.control,
+    name: 'panCard',
+  });
+  const isPanUploaded = Boolean(panFile?.id || panFile?.files?.[0]?.id);
+
   const watchRole = methods.watch('role');
 
-  const getErrorMessage = (fieldName) => {
-    if (!errors[fieldName]) return null;
-    return (
-      <Box
-        component="span"
-        sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, display: 'block' }}
-      >
-        {errors[fieldName]?.message}
-      </Box>
-    );
-  };
+  const getFileId = (fileValue) => {
+    if (!fileValue) return null;
 
-  const uploadFile = async (file) => {
-    if (!file) return null;
+    // Existing file (edit mode)
+    if (fileValue.id) return fileValue.id;
 
-    const fd = new FormData();
-    fd.append('file', file);
-
-    const res = await axiosInstance.post('/files', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-
-    return res?.data?.files?.[0]?.id || null;
-  };
-
-  const handlePanUpload = async (file) => {
-    try {
-      if (!file) return;
-
-      enqueueSnackbar('Uploading PAN...', { variant: 'info' });
-
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const uploadRes = await axiosInstance.post('/files', uploadFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const uploaded = uploadRes?.data?.files?.[0];
-      if (!uploaded || !uploaded.id) {
-        throw new Error('PAN file upload failed');
-      }
-      setIsPanUploaded(true);
-
-      enqueueSnackbar('Extracting PAN details…', { variant: 'info' });
-
-      const extractRes = await axiosInstance.post('/extract/pan-info', uploadFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const panData = extractRes?.data?.data || extractRes?.data;
-
-      const panNumberFromApi = panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.extractedDateOfBirth || '';
-      const panHolderNameFromApi = panData?.extractedPanHolderName || '';
-
-      if (!panNumberFromApi && !dobFromApi && !panHolderNameFromApi) {
-        enqueueSnackbar(
-          "We couldn't fetch details from your PAN document. Please fill the details manually.",
-          { variant: 'error' }
-        );
-        return;
-      }
-
-      // Autofill PAN form fields
-      methods.setValue('submittedPanFullName', panHolderNameFromApi || '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-
-      methods.setValue('submittedPanNumber', panNumberFromApi || '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-
-      if (dobFromApi) {
-        methods.setValue('submittedDateOfBirth', new Date(dobFromApi), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
-
-      // Keep extracted values for API payload
-      setExtractedPan({
-        extractedPanFullName: panHolderNameFromApi || '',
-        extractedPanNumber: panNumberFromApi || '',
-        extractedDateOfBirth: dobFromApi || '',
-      });
-
-      enqueueSnackbar('PAN details extracted successfully', { variant: 'success' });
-    } catch (err) {
-      console.error('Error in PAN upload/extraction:', err);
-      enqueueSnackbar(
-        "We couldn't fetch details from your PAN document. Please fill the details manually.",
-        { variant: 'error' }
-      );
+    // Newly uploaded file
+    if (fileValue.files?.length > 0) {
+      return fileValue.files[0]?.id || null;
     }
+
+    return null;
   };
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const panFileId = await uploadFile(data.panCard);
-      const boardFileId = await uploadFile(data.boardResolution);
-
       const usersId = sessionStorage.getItem('trustee_user_id');
 
       if (!usersId) {
         enqueueSnackbar('User ID missing. Restart KYC.', { variant: 'error' });
+        return;
+      }
+
+      const panCardFileId = getFileId(data.panCard);
+      const boardResolutionFileId = getFileId(data.boardResolution);
+
+      if (!panCardFileId && !isEditMode) {
+        enqueueSnackbar('PAN card is required', { variant: 'error' });
+        return;
+      }
+
+      if (!boardResolutionFileId && !isEditMode) {
+        enqueueSnackbar('Board Resolution is required', { variant: 'error' });
         return;
       }
 
@@ -245,8 +181,8 @@ export default function KYCAddSignatoriesForm({
           submittedPanNumber: data.submittedPanNumber,
           submittedDateOfBirth: data.submittedDateOfBirth,
 
-          panCardFileId: panFileId,
-          boardResolutionFileId: boardFileId,
+          panCardFileId,
+          boardResolutionFileId,
           designationType: isCustom ? 'custom' : 'dropdown',
           designationValue: isCustom
             ? data.customDesignation
@@ -274,6 +210,68 @@ export default function KYCAddSignatoriesForm({
   useEffect(() => {
     reset(defaultValues);
   }, [currentUser, defaultValues, reset]);
+
+  useEffect(() => {
+    if (!panFile?.id) return;
+
+    const extractPanDetails = async () => {
+      try {
+        setPanExtractionStatus('loading');
+
+        const response = await axiosInstance.post('/extract/pan-info', {
+          fileId: panFile.id,
+        });
+
+        const data = response?.data?.data || {};
+
+        const panNumber = data?.extractedPanNumber;
+        const panName = data?.extractedPanHolderName;
+        const panDob = data?.extractedDateOfBirth;
+
+        if (!panNumber && !panName && !panDob) {
+          setPanExtractionStatus('failed');
+          enqueueSnackbar("Couldn't extract PAN details. Please fill manually.", {
+            variant: 'error',
+          });
+          return;
+        }
+
+        if (panName) {
+          setValue('panHoldersName', panName, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+
+        if (panNumber) {
+          setValue('panNumber', panNumber, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+
+        if (panDob) {
+          setValue('submittedDateOfBirth', panDob, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+
+        setPanExtractionStatus('success');
+        enqueueSnackbar('PAN details extracted successfully', {
+          variant: 'success',
+        });
+      } catch (error) {
+        console.error(error);
+        setPanExtractionStatus('failed');
+        enqueueSnackbar('Unable to extract PAN details. Please fill manually.', {
+          variant: 'error',
+        });
+      }
+    };
+
+    extractPanDetails();
+  }, [panFile?.id]);
 
   return (
     <Dialog
@@ -365,33 +363,30 @@ export default function KYCAddSignatoriesForm({
               </>
             ) : (
               <>
-                <RHFFileUploadBox
+                <RHFCustomFileUploadBox
                   name="panCard"
                   label="Upload PAN*"
-                  accept="application/pdf,image/*"
                   fileType="pan"
                   required={!isEditMode}
                   error={!!errors.panCard}
-                  onDrop={async (files) => {
-                    const file = files[0];
-                    if (!file) return;
-                    methods.setValue('panCard', file, { shouldValidate: true });
-                    await handlePanUpload(file);
+                  accept={{
+                    'application/pdf': ['.pdf'],
+                    'image/png': ['.png'],
+                    'image/jpeg': ['.jpg', '.jpeg'],
                   }}
                 />
-                {getErrorMessage('panCard')}
                 <RHFTextField
                   name="submittedPanFullName"
                   label="PAN Holder Full Name*"
                   InputLabelProps={{ shrink: true }}
-                  disabled={!isPanUploaded || isViewMode}
+                  disabled={!isPanUploaded}
                 />
 
                 <RHFTextField
                   name="submittedPanNumber"
                   label="PAN Number*"
                   InputLabelProps={{ shrink: true }}
-                  disabled={!isPanUploaded || isViewMode}
+                  disabled={!isPanUploaded}
                 />
 
                 <Controller
@@ -401,7 +396,7 @@ export default function KYCAddSignatoriesForm({
                     <DatePicker
                       {...field}
                       label="PAN Date of Birth*"
-                      disabled={!isPanUploaded || isViewMode}
+                      disabled={!isPanUploaded}
                       value={field.value ? new Date(field.value) : null}
                       onChange={(newValue) => field.onChange(newValue)}
                       format="dd/MM/yyyy"
@@ -415,16 +410,18 @@ export default function KYCAddSignatoriesForm({
                     />
                   )}
                 />
-
-                <RHFFileUploadBox
+                <RHFCustomFileUploadBox
                   name="boardResolution"
                   label="Board Resolution*"
-                  accept="application/pdf,image/*"
                   fileType="boardResolution"
                   required={!isEditMode}
                   error={!!errors.boardResolution}
+                  accept={{
+                    'application/pdf': ['.pdf'],
+                    'image/png': ['.png'],
+                    'image/jpeg': ['.jpg', '.jpeg'],
+                  }}
                 />
-                {getErrorMessage('boardResolution')}
               </>
             )}
           </Box>
