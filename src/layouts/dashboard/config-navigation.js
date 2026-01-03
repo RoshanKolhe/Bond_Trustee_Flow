@@ -71,7 +71,7 @@ export function useNavData() {
           },
            {
             title: t('assigned issues'),
-            path: paths.dashboard.assignedIssues.list,
+            path: paths.dashboard.assignedIssues.issue,
             icon: ICONS.assign,
           },
           // { title: t('banking'), path: paths.dashboard.general.banking, icon: ICONS.banking },

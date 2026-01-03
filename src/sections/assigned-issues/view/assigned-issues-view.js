@@ -5,10 +5,11 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import { useRouter } from 'src/routes/hook/use-router';
-import { Card, Chip, Grid } from '@mui/material';
+import { Card, Chip, Grid, Link } from '@mui/material';
 import { color } from '@mui/system';
 import RejectReasonDialog from 'src/components/reject-dialog-box/reject-dialog-box';
-
+import { paths } from 'src/routes/paths';
+import { RouterLink } from 'src/routes/components';
 
 // ----------------------------------------------------------------------
 // MOCK DATA
@@ -31,7 +32,6 @@ export const PENDING_APPOINTMENTS = [
     tenure: '5 Years',
     requestedDate: '10/23/2024',
   },
-
 ];
 
 export const UPCOMING_COUPONS = [
@@ -60,7 +60,6 @@ export const Compliance_Alerts = [
     date: '12/15/2024',
     status: 'High',
     Background: 'linear-gradient(180deg, #991C1E 0%, #FF2F32 100%)',
-
   },
   {
     id: 2,
@@ -71,31 +70,33 @@ export const Compliance_Alerts = [
     date: '01/15/2025',
     status: 'Medium',
     Background: 'linear-gradient(180deg, #0E458C 0%, #1877F2 100%)',
-
   },
 ];
 
-
 // ----------------------------------------------------------------------
 // LIST COMPONENT (ARRAY → FIELDS)
-export default function AssignedIssuesListView() {
+export default function AssignedIssuesView() {
   const theme = useTheme();
   const router = useRouter();
+
+  const handleViewAll = () => {
+    router.push(paths.dashboard.assignedIssues.list); // 👈 next page route
+  };
 
   return (
     <Grid container spacing={2}>
       {/* LEFT: Assigned Issues */}
-      <Grid item xs={12} md={8} >
-        <Card sx={{
-          p: 2,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: 'none',
-        }}>
-
+      <Grid item xs={12} md={8}>
+        <Card
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: 'none',
+          }}
+        >
           <Stack spacing={0.3}>
-
             <Stack direction="row" spacing={1} alignItems="center">
               <Box
                 component="img"
@@ -109,12 +110,10 @@ export default function AssignedIssuesListView() {
               </Typography>
             </Stack>
 
-
             <Typography variant="body2" color="text.secondary">
               Your currently assigned bond issues
             </Typography>
           </Stack>
-
 
           {/* LIST */}
           <Stack spacing={1.5} mt={2}>
@@ -140,11 +139,7 @@ export default function AssignedIssuesListView() {
                 }}
               >
                 {/* Header */}
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack spacing={0.3}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography variant="subtitle2" fontWeight={600}>
@@ -167,9 +162,8 @@ export default function AssignedIssuesListView() {
                   <Button
                     size="small"
                     variant="contained"
-                    onClick={() => router.push(`/appointments/${item.id}`)}
+                    onClick={() => router.push(paths.dashboard.mybond.bondIssue(item.id))}
                     sx={{
-
                       borderRadius: 20,
                       backgroundColor: '#1877F2',
                       '&:hover': {
@@ -182,12 +176,7 @@ export default function AssignedIssuesListView() {
                 </Stack>
 
                 {/* Footer */}
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  mt={0.8}
-                  flexWrap="wrap"
-                >
+                <Stack direction="row" spacing={2} mt={0.8} flexWrap="wrap">
                   <Typography variant="caption">
                     Amount: <strong>{item.amount}</strong>
                   </Typography>
@@ -198,24 +187,52 @@ export default function AssignedIssuesListView() {
                     Issued: <strong>{item.requestedDate}</strong>
                   </Typography>
                 </Stack>
-
               </Box>
-
             ))}
           </Stack>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            {/* <Button
+              onClick={handleViewAll}
+              sx={{
+                border: '1px solid #212B36',
+                color: '#ffffff',
+                backgroundColor: '#212B36',
+                '&:hover': {
+                  backgroundColor: '#1a222b',
+                  borderColor: '#1a222b',
+                },
+              }}
+            >
+              View all
+            </Button> */}
+            <Link
+              component={RouterLink}
+              to={paths.dashboard.assignedIssues.list}
+              underline="none"
+              sx={{
+                fontWeight: 600,
+                fontSize: 14,
+                color: '#000',
+              }}
+            >
+              View all
+            </Link>
+          </Box>
         </Card>
       </Grid>
 
       {/* RIGHT: Quick Actions */}
       <Grid item xs={12} md={4}>
-        <Card sx={{
-          p: 2,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: 'none',
-          height: '100%',
-        }}>
+        <Card
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: 'none',
+            height: '100%',
+          }}
+        >
           <Typography variant="subtitle1" color="#1877F2" fontWeight={700} mb={1}>
             Quick Actions
           </Typography>
@@ -294,12 +311,7 @@ export default function AssignedIssuesListView() {
                   {item.description}
                 </Typography>
 
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mt={0.8}
-                >
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mt={0.8}>
                   <Typography variant="caption" color="text.secondary">
                     Date: {item.requestedDate}
                   </Typography>
@@ -313,8 +325,8 @@ export default function AssignedIssuesListView() {
                       height: '32px',
                     }}
 
-                  // onClick={() => setRejectOpen(true)}
-                  // disabled={loading || data?.kycApplications?.status === 2}
+                    // onClick={() => setRejectOpen(true)}
+                    // disabled={loading || data?.kycApplications?.status === 2}
                   >
                     Decline
                   </Button>
@@ -325,8 +337,8 @@ export default function AssignedIssuesListView() {
                     sx={{
                       height: '32px',
                     }}
-                  // onClick={() => handleStatusUpdate(2)}
-                  // disabled={loading || data?.kycApplications?.status === 2}
+                    // onClick={() => handleStatusUpdate(2)}
+                    // disabled={loading || data?.kycApplications?.status === 2}
                   >
                     Approve
                   </Button>
@@ -336,7 +348,6 @@ export default function AssignedIssuesListView() {
           </Stack>
         </Card>
       </Grid>
-
 
       <Grid item xs={12} md={4}>
         <Card
@@ -395,12 +406,7 @@ export default function AssignedIssuesListView() {
                   {item.description}
                 </Typography>
 
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mt={0.8}
-                >
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mt={0.8}>
                   <Typography variant="caption" color="text.secondary">
                     Date: {item.date}
                   </Typography>
@@ -418,7 +424,6 @@ export default function AssignedIssuesListView() {
                     }}
                   />
                 </Stack>
-
               </Box>
             ))}
           </Stack>
@@ -482,24 +487,15 @@ export default function AssignedIssuesListView() {
                   {item.title}
                 </Typography>
 
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mt={0.8}
-                >
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mt={0.8}>
                   <Typography variant="caption" color="text.secondary">
                     Date: {item.date}
                   </Typography>
-
-
                 </Stack>
 
                 <Stack direction="row" spacing={2} justifyContent="flex-start" sx={{ mt: 4 }}>
-
                   <Button
                     variant="soft"
-
                     sx={{
                       height: '32px',
                       color: '#fff',
@@ -507,10 +503,9 @@ export default function AssignedIssuesListView() {
                       '&:hover': {
                         backgroundColor: '#ffbf33',
                       },
-
                     }}
-                  // onClick={() => handleStatusUpdate(2)}
-                  // disabled={loading || data?.kycApplications?.status === 2}
+                    // onClick={() => handleStatusUpdate(2)}
+                    // disabled={loading || data?.kycApplications?.status === 2}
                   >
                     Pending
                   </Button>
@@ -529,8 +524,6 @@ export default function AssignedIssuesListView() {
           />
         </Card>
       </Grid>
-
-
     </Grid>
   );
 }

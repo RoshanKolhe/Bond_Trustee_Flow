@@ -73,12 +73,42 @@ export const endpoints = {
     filterList: (filter) => `/designations?filter=${filter}`,
     details: (id) => `/designations/${id}`,
   },
+  creditRatingAgencies: {
+    list: '/credit-rating-agencies',
+  },
+  creditRatings: {
+    list: '/credit-ratings',
+  },
+  bondApplications: {
+    list: '/bond-applications',
+    filterList: (filter) => `/bond-applications?filter=${filter}`,
+    details: (applicationId) => `/bond-applications/${applicationId}`,
+    dataByStatus: (applicationId, statusValue) =>
+      `/bond-applications/${applicationId}/data-by-status/${statusValue}`,
+  },
   entityType: {
     list: '/company-entity-types',
     filterList: (filter) => `/company-entity-types?filter=${filter}`,
     details: (id) => `/company-entity-types/${id}`,
   },
   documentByScreen: (route) => `/screens/documents-by-screen/${encodeURIComponent(route)}`,
+  bondFlowDocuments: {
+    documentList: (status) => `/bonds-pre-issue/fetch-documents/${status}`,
+  },
+  redemptionTypes: {
+    list: '/redemption-types',
+    filterList: (filter) => `/redemption-types?filter=${filter}`,
+    details: (accountId) => `/redemption-types/${accountId}`,
+  },
+  investorCategories: {
+    list: '/investor-categories',
+    filterList: (filter) => `/investor-categories?filter=${filter}`,
+  },
+  fieldOptions: {
+    chargeTypes: '/charge-types',
+    ownershipTypes: '/ownership-types',
+    collateralTypes: '/collateral-types',
+  },
   trusteeKyc: {
     kycProgress: (sessionId) => `/trustee-profiles/kyc-progress/${sessionId}`,
     getSection: (section, profileId, route = '') =>

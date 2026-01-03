@@ -12,7 +12,7 @@ export default function AssignedIssueListPage() {
         <title> Dashboard: Assigned Issues List</title>
       </Helmet>
 
-      <AssignedIssuesListView/>
+      <AssignedIssuesListView />
     </>
   );
 }

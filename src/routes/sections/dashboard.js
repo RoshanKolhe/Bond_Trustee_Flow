@@ -32,9 +32,12 @@ const InvoiceDetailsPage = lazy(() => import('src/pages/dashboard/invoice/detail
 const InvoiceCreatePage = lazy(() => import('src/pages/dashboard/invoice/new'));
 const InvoiceEditPage = lazy(() => import('src/pages/dashboard/invoice/edit'));
 // PENDING APPOINTMENTS
-const PendingAppointmentsListPage = lazy(()=> import('src/pages/dashboard/pending-appointment/list'));
+const PendingAppointmentsListPage = lazy(() =>
+  import('src/pages/dashboard/pending-appointment/list')
+);
 // ASSIGNED ISSUES
-const AssignedIssueListPage = lazy(()=> import('src/pages/dashboard/assigned-issues/list'));
+const AssignedIssuePage = lazy(() => import('src/pages/dashboard/assigned-issues/issue'));
+const AssignedIssueListPage = lazy(() => import('src/pages/dashboard/assigned-issues/list'));
 // USER
 const UserProfilePage = lazy(() => import('src/pages/dashboard/user/profile'));
 const UserCardsPage = lazy(() => import('src/pages/dashboard/user/cards'));
@@ -58,8 +61,10 @@ const SchedulerListPage = lazy(() => import('src/pages/dashboard/scheduler/list'
 const SchedulerEditPage = lazy(() => import('src/pages/dashboard/scheduler/edit'));
 const SchedulerViewPage = lazy(() => import('src/pages/dashboard/scheduler/view'));
 // TRUSTEE PROFILE FOR KYC
-const TrusteeProfileNewPage = lazy(()=> import('src/pages/dashboard/trustee-profiles/new'));
-const TrusteeProfliesDetailsPage = lazy(()=> import('src/pages/dashboard/trustee-profiles/details'));
+const TrusteeProfileNewPage = lazy(() => import('src/pages/dashboard/trustee-profiles/new'));
+const TrusteeProfliesDetailsPage = lazy(() =>
+  import('src/pages/dashboard/trustee-profiles/details')
+);
 // DESIGNATION
 const DesignationNewPage = lazy(() => import('src/pages/dashboard/designation/new'));
 const DesignationListPage = lazy(() => import('src/pages/dashboard/designation/list'));
@@ -79,7 +84,7 @@ const JobEditPage = lazy(() => import('src/pages/dashboard/job/edit'));
 const SignatoriesCreatePage = lazy(() => import('src/pages/dashboard/signatories/new'));
 const SignatoriesListPage = lazy(() => import('src/pages/dashboard/signatories/list'));
 const SignatoriesEditPage = lazy(() => import('src/pages/dashboard/signatories/edit'));
-const SignatoriesDetailsPage = lazy(()=> import('src/pages/dashboard/signatories/details'))
+const SignatoriesDetailsPage = lazy(() => import('src/pages/dashboard/signatories/details'));
 // TOUR
 const TourDetailsPage = lazy(() => import('src/pages/dashboard/tour/details'));
 const TourListPage = lazy(() => import('src/pages/dashboard/tour/list'));
@@ -96,6 +101,8 @@ const KanbanPage = lazy(() => import('src/pages/dashboard/kanban'));
 const PermissionDeniedPage = lazy(() => import('src/pages/dashboard/permission'));
 // BLANK PAGE
 const BlankPage = lazy(() => import('src/pages/dashboard/blank'));
+//
+const MyBondNewIssuePage = lazy(() => import('src/pages/dashboard/mybond/bond-issue'));
 
 // ----------------------------------------------------------------------
 
@@ -150,8 +157,8 @@ export const dashboardRoutes = [
         path: 'trusteeProfiles',
         children: [
           { element: <TrusteeProfileNewPage />, index: true },
-          { path: 'new', element: <TrusteeProfileNewPage/> },
-          { path: ':id', element: <TrusteeProfliesDetailsPage/> },
+          { path: 'new', element: <TrusteeProfileNewPage /> },
+          { path: ':id', element: <TrusteeProfliesDetailsPage /> },
         ],
       },
       {
@@ -172,7 +179,7 @@ export const dashboardRoutes = [
           { path: ':id', element: <OrderDetailsPage /> },
         ],
       },
-          {
+      {
         path: 'pendingAppointments',
         children: [
           { element: <PendingAppointmentsListPage />, index: true },
@@ -180,10 +187,11 @@ export const dashboardRoutes = [
           { path: ':id', element: <OrderDetailsPage /> },
         ],
       },
-         {
+      {
         path: 'assignedIssues',
         children: [
-          { element: <AssignedIssueListPage />, index: true },
+          { element: <AssignedIssuePage />, index: true },
+          { path: 'issue', element: <AssignedIssuePage /> },
           { path: 'list', element: <AssignedIssueListPage /> },
           { path: ':id', element: <OrderDetailsPage /> },
         ],
@@ -267,6 +275,13 @@ export const dashboardRoutes = [
           { path: ':id', element: <TourDetailsPage /> },
           { path: 'new', element: <TourCreatePage /> },
           { path: ':id/edit', element: <TourEditPage /> },
+        ],
+      },
+      {
+        path: 'mybond',
+        children: [
+          { element: <MyBondNewIssuePage />, index: true },
+          { path: 'bond-issue/:applicationId', element: <MyBondNewIssuePage /> },
         ],
       },
       { path: 'file-manager', element: <FileManagerPage /> },
