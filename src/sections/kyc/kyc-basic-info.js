@@ -51,8 +51,6 @@ export default function KYCBasicInfo() {
 
   const [panExtractionStatus, setPanExtractionStatus] = useState('idle'); // 'idle' | 'success' | 'failed'
   const [extractedPanDetails, setExtractedPanDetails] = useState(null);
-  const [uploadedPanFile, setUploadedPanFile] = useState(null);
-  const isPanUploaded = Boolean(uploadedPanFile);
   // State to store mapped API values
   const [entityOptions, setEntityOptions] = useState([]);
   const { EntityTypes, EntityTypesEmpty } = useGetTrusteeEntityTypes();
@@ -139,6 +137,8 @@ export default function KYCBasicInfo() {
     name: 'panFile',
   });
 
+  const isPanUploaded = Boolean(panFile?.id);
+
   const onSubmit = handleSubmit(async (formData) => {
     try {
       const sessionId = localStorage.getItem('sessionId') || '';
@@ -200,7 +200,7 @@ export default function KYCBasicInfo() {
         extractedPanDetails: extractedPan,
         submittedPanDetails: submittedPan,
 
-        panCardDocumentId: formData.panCardDocumentId,
+        panCardDocumentId: formData.panFile.id,
         trusteeEntityTypesId: formData.companyEntityTypeId,
       };
 
@@ -300,7 +300,6 @@ export default function KYCBasicInfo() {
         };
 
         setValue('panFile', serverFile, { shouldValidate: true });
-        setUploadedPanFile(serverFile);
 
         // Also hydrate extractedPanDetails for humanEdited comparison
         setExtractedPanDetails({

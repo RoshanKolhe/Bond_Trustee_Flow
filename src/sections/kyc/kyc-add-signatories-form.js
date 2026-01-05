@@ -293,10 +293,6 @@ export default function KYCAddSignatoriesForm({
             '&::-webkit-scrollbar': {
               display: 'none',
             },
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-            overflowY: 'auto',
-            maxHeight: '70vh',
             pr: 2,
           }}
         >
