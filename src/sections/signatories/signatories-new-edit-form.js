@@ -15,7 +15,11 @@ import DialogContent from '@mui/material/DialogContent';
 // components
 import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, { RHFCustomFileUploadBox, RHFSelect, RHFTextField } from 'src/components/hook-form';
+import FormProvider, {
+  RHFCustomFileUploadBox,
+  RHFSelect,
+  RHFTextField,
+} from 'src/components/hook-form';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
 import axios from 'axios';
 import { useAuthContext } from 'src/auth/hooks';
@@ -76,8 +80,14 @@ export default function SignatoriesNewEditForm({
     customDesignation: Yup.string().when('role', (role, schema) =>
       role === 'OTHER' ? schema.required('Please enter designation') : schema.notRequired()
     ),
-    submittedPanFullName: Yup.string().required('PAN Holder Name is required'),
-    submittedPanNumber: Yup.string().required('PAN Number is required'),
+    submittedPanFullName: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .required("PAN Holder's Name is required")
+      .matches(/^[A-Za-z\s]+$/, 'Only alphabets allowed'),
+    submittedPanNumber: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')
+      .required('PAN Number is required'),
     submittedDateOfBirth: Yup.string().required('DOB is required'),
     panCard: Yup.mixed().test('fileRequired', 'PAN card is required', function (value) {
       if (isEditMode) return true;
@@ -102,21 +112,21 @@ export default function SignatoriesNewEditForm({
         currentSignatories?.designationType === 'custom'
           ? 'OTHER'
           : ROLES.find((r) => r.label === currentSignatories?.designationValue)?.value ||
-          currentSignatories?.designationValue ||
-          '',
+            currentSignatories?.designationValue ||
+            '',
       panCard: currentSignatories?.panCardFile
         ? {
-          id: currentSignatories.panCardFile.id,
-          name: currentSignatories.panCardFile.fileOriginalName,
-          url: currentSignatories.panCardFile.fileUrl,
-        }
+            id: currentSignatories.panCardFile.id,
+            name: currentSignatories.panCardFile.fileOriginalName,
+            url: currentSignatories.panCardFile.fileUrl,
+          }
         : null,
       boardResolution: currentSignatories?.boardResolutionFile
         ? {
-          id: currentSignatories.boardResolutionFile.id,
-          name: currentSignatories.boardResolutionFile.fileOriginalName,
-          url: currentSignatories.boardResolutionFile.fileUrl,
-        }
+            id: currentSignatories.boardResolutionFile.id,
+            name: currentSignatories.boardResolutionFile.fileOriginalName,
+            url: currentSignatories.boardResolutionFile.fileUrl,
+          }
         : null,
       submittedPanFullName: currentSignatories?.submittedPanFullName || '',
       submittedPanNumber: currentSignatories?.submittedPanNumber || '',
@@ -136,7 +146,6 @@ export default function SignatoriesNewEditForm({
     control: methods.control,
     name: 'panCard',
   });
-
 
   const {
     reset,
@@ -223,7 +232,6 @@ export default function SignatoriesNewEditForm({
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-
       const isCustom = data.role === 'OTHER';
       const signatoryId = currentSignatories?.id;
 
@@ -243,9 +251,7 @@ export default function SignatoriesNewEditForm({
         submittedDateOfBirth: format(new Date(data.submittedDateOfBirth), 'yyyy-MM-dd'),
 
         panCardFileId: data.panCard?.id ? String(data.panCard.id) : null,
-        boardResolutionFileId: data.boardResolution?.id
-          ? String(data.boardResolution.id)
-          : null,
+        boardResolutionFileId: data.boardResolution?.id ? String(data.boardResolution.id) : null,
         designationType: isCustom ? 'custom' : 'dropdown',
         designationValue: isCustom
           ? data.customDesignation
@@ -369,6 +375,7 @@ export default function SignatoriesNewEditForm({
               label="PAN Holder Full Name*"
               disabled={!isPanUploaded || isViewMode}
               InputLabelProps={{ shrink: true }}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
             />
           </Grid>
 
@@ -378,6 +385,7 @@ export default function SignatoriesNewEditForm({
               label="PAN Number*"
               disabled={!isPanUploaded || isViewMode}
               InputLabelProps={{ shrink: true }}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
             />
           </Grid>
 

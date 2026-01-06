@@ -72,8 +72,14 @@ export default function KYCAddSignatoriesForm({
     customDesignation: Yup.string().when('role', (role, schema) =>
       role === 'OTHER' ? schema.required('Please enter designation') : schema.notRequired()
     ),
-    submittedPanFullName: Yup.string().required('PAN Holder Name is required'),
-    submittedPanNumber: Yup.string().required('PAN Number is required'),
+    submittedPanFullName: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .required("PAN Holder's Name is required")
+      .matches(/^[A-Za-z\s]+$/, 'Only alphabets allowed'),
+    submittedPanNumber: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')
+      .required('PAN Number is required'),
     submittedDateOfBirth: Yup.string().required('DOB is required'),
     panCard: Yup.mixed().test('fileRequired', 'PAN card is required', function (value) {
       if (isEditMode) return true;
@@ -376,6 +382,7 @@ export default function KYCAddSignatoriesForm({
                   label="PAN Holder Full Name*"
                   InputLabelProps={{ shrink: true }}
                   disabled={!isPanUploaded}
+                  inputProps={{ style: { textTransform: 'uppercase' } }}
                 />
 
                 <RHFTextField
@@ -383,6 +390,7 @@ export default function KYCAddSignatoriesForm({
                   label="PAN Number*"
                   InputLabelProps={{ shrink: true }}
                   disabled={!isPanUploaded}
+                  inputProps={{ style: { textTransform: 'uppercase' } }}
                 />
 
                 <Controller

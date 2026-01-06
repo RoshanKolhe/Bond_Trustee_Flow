@@ -90,8 +90,14 @@ export default function KYCBasicInfo() {
     state: Yup.string().required('State is required'),
     country: Yup.string().required('Country is required'),
     panFile: Yup.mixed().required('PAN file is required'),
-    panNumber: Yup.string().required('PAN Number is required'),
-    panHoldersName: Yup.string().required("PAN Holder's Name is required"),
+    panNumber: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')
+      .required('PAN Number is required'),
+    panHoldersName: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .required("PAN Holder's Name is required")
+      .matches(/^[A-Za-z\s]+$/, 'Only alphabets allowed'),
     companyEntityTypeId: Yup.string().required('Entity Type is required'),
   });
 
@@ -623,6 +629,7 @@ export default function KYCBasicInfo() {
                   label="PAN Number *"
                   placeholder="Enter PAN Number"
                   disabled={!isPanUploaded}
+                  inputProps={{ style: { textTransform: 'uppercase' } }}
                 />
               </Grid>
 
@@ -632,6 +639,7 @@ export default function KYCBasicInfo() {
                   label="PAN Holder Name *"
                   placeholder="Enter Name"
                   disabled={!isPanUploaded}
+                  inputProps={{ style: { textTransform: 'uppercase' } }}
                 />
               </Grid>
             </Grid>

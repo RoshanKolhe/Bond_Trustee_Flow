@@ -4,254 +4,276 @@ import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 
-import {
-    Box,
-    Button,
-    CircularProgress,
-    Card,
-    Grid,
-    MenuItem,
-    Typography,
-} from '@mui/material';
+import { Box, Button, CircularProgress, Card, Grid, MenuItem, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 
 import { useSnackbar } from 'src/components/snackbar';
 import Iconify from 'src/components/iconify';
 import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
-import FormProvider, { RHFCustomFileUploadBox, RHFSelect, RHFTextField } from 'src/components/hook-form';
+import FormProvider, {
+  RHFCustomFileUploadBox,
+  RHFSelect,
+  RHFTextField,
+} from 'src/components/hook-form';
 import axiosInstance from 'src/utils/axios';
 
-
 const ROLES = [
-    { value: 'DIRECTOR', label: 'Director' },
-    { value: 'SIGNATORY', label: 'Signatory' },
-    { value: 'MANAGER', label: 'Manager' },
-    { value: 'OTHER', label: 'Other' },
+  { value: 'DIRECTOR', label: 'Director' },
+  { value: 'SIGNATORY', label: 'Signatory' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 export default function SignatoriesDetails({ currentUser, isViewMode, isEditMode }) {
-    const { enqueueSnackbar } = useSnackbar();
-    const [extractedPan, setExtractedPan] = useState(null);
-    const [isPanUploaded, setIsPanUploaded] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const [extractedPan, setExtractedPan] = useState(null);
+  const [isPanUploaded, setIsPanUploaded] = useState(false);
 
-    // ---------------------- VALIDATION ----------------------
-    const schema = Yup.object().shape({
-        name: Yup.string().required('Name is required'),
-        email: Yup.string().required('Email is required').email(),
-        phoneNumber: Yup.string().required('Phone is required').matches(/^[0-9]{10}$/, 'Must be 10 digits'),
-        role: Yup.string().required(),
-        customDesignation: Yup.string().when('role', {
-            is: 'OTHER',
-            then: Yup.string().required('Enter custom designation'),
-        }),
-        submittedPanFullName: Yup.string().required(),
-        submittedPanNumber: Yup.string().required(),
-        submittedDateOfBirth: Yup.string().required(),
-        panCard: Yup.mixed().test('required', 'PAN card is required', (v) => isEditMode || !!v),
-        boardResolution: Yup.mixed().test('required', 'Board Resolution is required', (v) => isEditMode || !!v),
-    });
+  // ---------------------- VALIDATION ----------------------
+  const schema = Yup.object().shape({
+    name: Yup.string().required('Name is required'),
+    email: Yup.string().required('Email is required').email(),
+    phoneNumber: Yup.string()
+      .required('Phone is required')
+      .matches(/^[0-9]{10}$/, 'Must be 10 digits'),
+    role: Yup.string().required(),
+    customDesignation: Yup.string().when('role', {
+      is: 'OTHER',
+      then: Yup.string().required('Enter custom designation'),
+    }),
+    submittedPanFullName: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .required("PAN Holder's Name is required")
+      .matches(/^[A-Za-z\s]+$/, 'Only alphabets allowed'),
+    submittedPanNumber: Yup.string()
+      .transform((value) => value?.toUpperCase())
+      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')
+      .required('PAN Number is required'),
+    submittedDateOfBirth: Yup.string().required(),
+    panCard: Yup.mixed().test('required', 'PAN card is required', (v) => isEditMode || !!v),
+    boardResolution: Yup.mixed().test(
+      'required',
+      'Board Resolution is required',
+      (v) => isEditMode || !!v
+    ),
+  });
 
-    // ---------------------- DEFAULT VALUES ----------------------
-    const defaultValues = useMemo(
-        () => ({
-            name: currentUser?.fullName || '',
-            email: currentUser?.email || '',
-            phoneNumber: currentUser?.phone || '',
+  // ---------------------- DEFAULT VALUES ----------------------
+  const defaultValues = useMemo(
+    () => ({
+      name: currentUser?.fullName || '',
+      email: currentUser?.email || '',
+      phoneNumber: currentUser?.phone || '',
 
-            // FIXED ROLE MAPPING
-            role:
-                currentUser?.designationValue
-                    ? ROLES.find((r) => r.label.toLowerCase() === currentUser.designationValue.toLowerCase())?.value
-                    : '',
+      // FIXED ROLE MAPPING
+      role: currentUser?.designationValue
+        ? ROLES.find((r) => r.label.toLowerCase() === currentUser.designationValue.toLowerCase())
+            ?.value
+        : '',
 
-            customDesignation:
-                currentUser?.designationType === 'CUSTOM' ? currentUser.designationValue : '',
+      customDesignation:
+        currentUser?.designationType === 'CUSTOM' ? currentUser.designationValue : '',
 
-            panCard: currentUser?.panCardFileId || null,
-            boardResolution: currentUser?.boardResolutionFileId || null,
+      panCard: currentUser?.panCardFileId || null,
+      boardResolution: currentUser?.boardResolutionFileId || null,
 
-            submittedPanFullName: currentUser?.submittedPanFullName || '',
-            submittedPanNumber: currentUser?.submittedPanNumber || '',
-            submittedDateOfBirth:
-                currentUser?.submittedDateOfBirth ? new Date(currentUser.submittedDateOfBirth) : null,
-        }),
-        [currentUser]
-    );
+      submittedPanFullName: currentUser?.submittedPanFullName || '',
+      submittedPanNumber: currentUser?.submittedPanNumber || '',
+      submittedDateOfBirth: currentUser?.submittedDateOfBirth
+        ? new Date(currentUser.submittedDateOfBirth)
+        : null,
+    }),
+    [currentUser]
+  );
 
+  const methods = useForm({
+    defaultValues,
+    resolver: yupResolver(schema),
+  });
 
-    const methods = useForm({
-        defaultValues,
-        resolver: yupResolver(schema),
-    });
+  const { handleSubmit, reset, setValue, watch } = methods;
+  const roleWatch = watch('role');
 
-    const { handleSubmit, reset, setValue, watch } = methods;
-    const roleWatch = watch('role');
+  useEffect(() => {
+    if (currentUser) reset(defaultValues);
+  }, [currentUser]);
 
-    useEffect(() => {
-        if (currentUser) reset(defaultValues);
-    }, [currentUser]);
+  // ---------------------- FILE HANDLERS ----------------------
+  const uploadFile = async (file) => {
+    if (!file || typeof file === 'string') return file; // if already uploaded
+    const fd = new FormData();
+    fd.append('file', file);
+    const { data } = await axiosInstance.post('/files', fd);
+    return data?.files?.[0]?.id;
+  };
 
-    // ---------------------- FILE HANDLERS ----------------------
-    const uploadFile = async (file) => {
-        if (!file || typeof file === 'string') return file; // if already uploaded
-        const fd = new FormData();
-        fd.append('file', file);
-        const { data } = await axiosInstance.post('/files', fd);
-        return data?.files?.[0]?.id;
-    };
+  const handlePanUpload = async (file) => {
+    enqueueSnackbar('Uploading PAN...', { variant: 'info' });
 
-    const handlePanUpload = async (file) => {
-        enqueueSnackbar('Uploading PAN...', { variant: 'info' });
+    const fd = new FormData();
+    fd.append('file', file);
 
-        const fd = new FormData();
-        fd.append('file', file);
+    const uploadRes = await axiosInstance.post('/files', fd);
+    const uploadedFile = uploadRes?.data?.files?.[0];
 
-        const uploadRes = await axiosInstance.post('/files', fd);
-        const uploadedFile = uploadRes?.data?.files?.[0];
+    if (!uploadedFile) return enqueueSnackbar('Upload failed', { variant: 'error' });
 
-        if (!uploadedFile) return enqueueSnackbar('Upload failed', { variant: 'error' });
+    setIsPanUploaded(true);
 
-        setIsPanUploaded(true);
+    const extractRes = await axiosInstance.post('/extract/pan-info', fd);
+    const extracted = extractRes?.data?.data;
 
-        const extractRes = await axiosInstance.post('/extract/pan-info', fd);
-        const extracted = extractRes?.data?.data;
+    setExtractedPan(extracted);
 
-        setExtractedPan(extracted);
+    setValue('submittedPanFullName', extracted?.extractedPanHolderName || '');
+    setValue('submittedPanNumber', extracted?.extractedPanNumber || '');
+    setValue('submittedDateOfBirth', extracted?.extractedDateOfBirth || '');
+  };
 
-        setValue('submittedPanFullName', extracted?.extractedPanHolderName || '');
-        setValue('submittedPanNumber', extracted?.extractedPanNumber || '');
-        setValue('submittedDateOfBirth', extracted?.extractedDateOfBirth || '');
-    };
+  // ---------------------- SUBMIT ----------------------
+  const onSubmit = handleSubmit(async (form) => {
+    try {
+      const payload = {
+        signatory: {
+          fullName: form.name,
+          email: form.email,
+          phone: form.phoneNumber,
+          designationType: form.role === 'OTHER' ? 'CUSTOM' : 'DEFAULT',
+          designationValue:
+            form.role === 'OTHER'
+              ? form.customDesignation
+              : ROLES.find((r) => r.value === form.role)?.label,
+          submittedPanFullName: form.submittedPanFullName,
+          submittedPanNumber: form.submittedPanNumber,
+          submittedDateOfBirth: form.submittedDateOfBirth,
+          panCardFileId: await uploadFile(form.panCard),
+          boardResolutionFileId: await uploadFile(form.boardResolution),
+          ...(extractedPan ? { extractedPan } : {}),
+        },
+      };
 
-    // ---------------------- SUBMIT ----------------------
-    const onSubmit = handleSubmit(async (form) => {
-        try {
-            const payload = {
-                signatory: {
-                    fullName: form.name,
-                    email: form.email,
-                    phone: form.phoneNumber,
-                    designationType: form.role === 'OTHER' ? 'CUSTOM' : 'DEFAULT',
-                    designationValue:
-                        form.role === 'OTHER' ? form.customDesignation : ROLES.find((r) => r.value === form.role)?.label,
-                    submittedPanFullName: form.submittedPanFullName,
-                    submittedPanNumber: form.submittedPanNumber,
-                    submittedDateOfBirth: form.submittedDateOfBirth,
-                    panCardFileId: await uploadFile(form.panCard),
-                    boardResolutionFileId: await uploadFile(form.boardResolution),
-                    ...(extractedPan ? { extractedPan } : {}),
-                },
-            };
+      const res = await axiosInstance.post('/company-profiles/authorize-signatory', payload);
 
-            const res = await axiosInstance.post('/company-profiles/authorize-signatory', payload);
+      enqueueSnackbar(res?.data?.message || 'Success', { variant: 'success' });
+      reset(defaultValues);
+    } catch (err) {
+      enqueueSnackbar('Failed, try again', { variant: 'error' });
+    }
+  });
 
-            enqueueSnackbar(res?.data?.message || 'Success', { variant: 'success' });
-            reset(defaultValues);
-        } catch (err) {
-            enqueueSnackbar('Failed, try again', { variant: 'error' });
-        }
-    });
+  const isDisabled = isViewMode;
 
-    const isDisabled = isViewMode;
+  const panFile = currentUser?.panCardFile;
+  const boardFile = currentUser?.boardResolutionFile;
 
-    const panFile = currentUser?.panCardFile;
-    const boardFile = currentUser?.boardResolutionFile;
+  // ---------------------- UI ----------------------
+  return (
+    <Card sx={{ p: 4 }}>
+      <FormProvider methods={methods} onSubmit={onSubmit}>
+        <Grid container spacing={3} mt={2}>
+          <Grid item xs={12} sm={6}>
+            <RHFTextField name="name" label="Name*" disabled={true} />
+          </Grid>
 
-    // ---------------------- UI ----------------------
-    return (
-        <Card sx={{ p: 4 }}>
-            <FormProvider methods={methods} onSubmit={onSubmit}>
-                <Grid container spacing={3} mt={2}>
-                    <Grid item xs={12} sm={6}>
-                        <RHFTextField name="name" label="Name*" disabled={true} />
-                    </Grid>
+          <Grid item xs={12} sm={6}>
+            <RHFTextField name="email" label="Email*" disabled={true} />
+          </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <RHFTextField name="email" label="Email*" disabled={true} />
-                    </Grid>
+          <Grid item xs={12} sm={6}>
+            <RHFTextField
+              name="phoneNumber"
+              label="Phone*"
+              disabled={true}
+              inputProps={{ maxLength: 10 }}
+            />
+          </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <RHFTextField name="phoneNumber" label="Phone*" disabled={true} inputProps={{ maxLength: 10 }} />
-                    </Grid>
+          <Grid item xs={12} sm={6}>
+            <RHFSelect name="role" label="Designation*" disabled={true}>
+              {ROLES.map((r) => (
+                <MenuItem key={r.value} value={r.value}>
+                  {r.label}
+                </MenuItem>
+              ))}
+            </RHFSelect>
+          </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <RHFSelect name="role" label="Designation*" disabled={true}>
-                            {ROLES.map((r) => (
-                                <MenuItem key={r.value} value={r.value}>
-                                    {r.label}
-                                </MenuItem>
-                            ))}
-                        </RHFSelect>
-                    </Grid>
+          {roleWatch === 'OTHER' && !isDisabled && (
+            <Grid item xs={12} sm={6}>
+              <RHFTextField name="customDesignation" label="Custom Designation*" disabled={true} />
+            </Grid>
+          )}
 
-                    {roleWatch === 'OTHER' && !isDisabled && (
-                        <Grid item xs={12} sm={6}>
-                            <RHFTextField name="customDesignation" label="Custom Designation*" disabled={true} />
-                        </Grid>
-                    )}
+          {/* PAN Upload */}
+          <Grid item xs={12}>
+            <RHFCustomFileUploadBox
+              name="panCard"
+              label="Upload PAN*"
+              disabled
+              value={
+                panFile
+                  ? {
+                      id: panFile.id,
+                      name: panFile.fileOriginalName,
+                      url: panFile.fileUrl,
+                    }
+                  : null
+              }
+            />
+          </Grid>
 
-                    {/* PAN Upload */}
-                    <Grid item xs={12}>
-                        <RHFCustomFileUploadBox
-                            name="panCard"
-                            label="Upload PAN*"
-                            disabled
-                            value={
-                                panFile
-                                    ? {
-                                        id: panFile.id,
-                                        name: panFile.fileOriginalName,
-                                        url: panFile.fileUrl,
-                                    }
-                                    : null
-                            }
-                        />
+          <Grid item xs={12} sm={6}>
+            <RHFTextField
+              name="submittedPanFullName"
+              label="PAN Holder Name*"
+              disabled={!isPanUploaded || isDisabled}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+          </Grid>
 
-                    </Grid>
+          <Grid item xs={12} sm={6}>
+            <RHFTextField
+              name="submittedPanNumber"
+              label="PAN Number*"
+              disabled={!isPanUploaded || isDisabled}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+          </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <RHFTextField name="submittedPanFullName" label="PAN Holder Name*" disabled={!isPanUploaded || isDisabled} />
-                    </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller
+              name="submittedDateOfBirth"
+              control={methods.control}
+              render={({ field }) => (
+                <DatePicker
+                  label="DOB"
+                  disabled={!isPanUploaded || isDisabled}
+                  value={field.value instanceof Date && !isNaN(field.value) ? field.value : null}
+                  onChange={(newValue) => field.onChange(newValue ?? null)}
+                  format="dd/MM/yyyy"
+                />
+              )}
+            />
+          </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <RHFTextField name="submittedPanNumber" label="PAN Number*" disabled={!isPanUploaded || isDisabled} />
-                    </Grid>
-
-                    <Grid item xs={12} sm={6}>
-                        <Controller
-                            name="submittedDateOfBirth"
-                            control={methods.control}
-                            render={({ field }) => (
-                                <DatePicker
-                                    label="DOB"
-                                    disabled={!isPanUploaded || isDisabled}
-                                    value={field.value instanceof Date && !isNaN(field.value) ? field.value : null}
-                                    onChange={(newValue) => field.onChange(newValue ?? null)}
-                                    format="dd/MM/yyyy"
-                                />
-                            )}
-                        />
-
-                    </Grid>
-
-                    <Grid item xs={12}>
-                        <RHFCustomFileUploadBox
-                            name="panCard"
-                            label="Upload PAN*"
-                            disabled
-                            value={
-                                boardFile
-                                    ? {
-                                        id: boardFile.id,
-                                        name: boardFile.fileOriginalName,
-                                        url: boardFile.fileUrl,
-                                    }
-                                    : null
-                            }
-                        />
-                    </Grid>
-                </Grid>
-                {/* 
+          <Grid item xs={12}>
+            <RHFCustomFileUploadBox
+              name="panCard"
+              label="Upload PAN*"
+              disabled
+              value={
+                boardFile
+                  ? {
+                      id: boardFile.id,
+                      name: boardFile.fileOriginalName,
+                      url: boardFile.fileUrl,
+                    }
+                  : null
+              }
+            />
+          </Grid>
+        </Grid>
+        {/* 
         {!isDisabled && (
           <Box sx={{ textAlign: 'right', mt: 3 }}>
             <Button type="submit" variant="contained" startIcon={<Iconify icon="eva:save-fill" />}>
@@ -259,13 +281,13 @@ export default function SignatoriesDetails({ currentUser, isViewMode, isEditMode
             </Button>
           </Box>
         )} */}
-            </FormProvider>
-        </Card>
-    );
+      </FormProvider>
+    </Card>
+  );
 }
 
 SignatoriesDetails.propTypes = {
-    currentUser: PropTypes.object,
-    isViewMode: PropTypes.bool,
-    isEditMode: PropTypes.bool,
+  currentUser: PropTypes.object,
+  isViewMode: PropTypes.bool,
+  isEditMode: PropTypes.bool,
 };
