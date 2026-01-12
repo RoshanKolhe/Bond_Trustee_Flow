@@ -1,20 +1,15 @@
 import PropTypes from 'prop-types';
-import {
-  TableRow,
-  TableCell,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
+import { TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
 import Iconify from 'src/components/iconify';
 
 export default function AssignedIssueTableRow({ row, onView }) {
   return (
     <TableRow hover>
       <TableCell>{row.companyName}</TableCell>
-      <TableCell>{row.description}</TableCell>
+      <TableCell>{row.cin}</TableCell>
       <TableCell>{row.amount}</TableCell>
-      <TableCell>{row.title}</TableCell>
-      <TableCell>{row.date}</TableCell>
+      <TableCell>{row.tenure}</TableCell>
+      <TableCell>{row.requestedDate}</TableCell>
 
       <TableCell align="right">
         <Tooltip title="View">

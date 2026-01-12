@@ -10,29 +10,31 @@ import { color } from '@mui/system';
 import RejectReasonDialog from 'src/components/reject-dialog-box/reject-dialog-box';
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
+import { useGetAssignedIssues } from 'src/api/assignedIssues';
+import { useEffect, useState } from 'react';
 
 // ----------------------------------------------------------------------
 // MOCK DATA
-export const PENDING_APPOINTMENTS = [
-  {
-    id: 1,
-    companyName: 'Sunrise Infrastructure Ltd.',
-    cin: 'U35900XYZ23A4B5C60',
-    description: 'Appointment request for ₹600 Cr infrastructure bond issuance',
-    amount: '₹600 Crores',
-    tenure: '8 Years',
-    requestedDate: '10/12/2024',
-  },
-  {
-    id: 2,
-    companyName: 'Blue Ocean Logistics Pvt Ltd',
-    cin: 'U35800XYZ23A4B5C60',
-    description: 'Trustee appointment for ₹250 Cr secured NCD issuance',
-    amount: '₹250 Crores',
-    tenure: '5 Years',
-    requestedDate: '10/23/2024',
-  },
-];
+// export const PENDING_APPOINTMENTS = [
+//   {
+//     id: 1,
+//     companyName: 'Sunrise Infrastructure Ltd.',
+//     cin: 'U35900XYZ23A4B5C60',
+//     description: 'Appointment request for ₹600 Cr infrastructure bond issuance',
+//     amount: '₹600 Crores',
+//     tenure: '8 Years',
+//     requestedDate: '10/12/2024',
+//   },
+//   {
+//     id: 2,
+//     companyName: 'Blue Ocean Logistics Pvt Ltd',
+//     cin: 'U35800XYZ23A4B5C60',
+//     description: 'Trustee appointment for ₹250 Cr secured NCD issuance',
+//     amount: '₹250 Crores',
+//     tenure: '5 Years',
+//     requestedDate: '10/23/2024',
+//   },
+// ];
 
 export const UPCOMING_COUPONS = [
   {
@@ -78,10 +80,19 @@ export const Compliance_Alerts = [
 export default function AssignedIssuesView() {
   const theme = useTheme();
   const router = useRouter();
+  const [ assignedIssues, setAssignedIssues ] = useState([]);
+
+  const { assignedIssuesData } = useGetAssignedIssues();
 
   const handleViewAll = () => {
-    router.push(paths.dashboard.assignedIssues.list); // 👈 next page route
+    router.push(paths.dashboard.assignedIssues.list);
   };
+
+  useEffect(() => {
+    if(assignedIssuesData){
+      setAssignedIssues(assignedIssuesData.applications.slice(0, 2));
+    }
+  },[assignedIssuesData])
 
   return (
     <Grid container spacing={2}>
@@ -117,7 +128,7 @@ export default function AssignedIssuesView() {
 
           {/* LIST */}
           <Stack spacing={1.5} mt={2}>
-            {PENDING_APPOINTMENTS.map((item) => (
+            {assignedIssues.map((item) => (
               <Box
                 key={item.id}
                 sx={{
@@ -293,7 +304,7 @@ export default function AssignedIssuesView() {
 
           {/* List */}
           <Stack spacing={1.5} mt={2}>
-            {PENDING_APPOINTMENTS.map((item) => (
+            {assignedIssues.map((item) => (
               <Box
                 key={item.id}
                 sx={{
