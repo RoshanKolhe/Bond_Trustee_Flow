@@ -9,31 +9,39 @@ import DownloadButton from './download-button';
 // ----------------------------------------------------------------------
 
 export default function FileThumbnail({ file, tooltip, imageView, onDownload, sx, imgSx }) {
-  const { name = '', path = '', preview = '' } = fileData(file);
+  const { name = '', path = '', fileUrl = '' } = fileData(file);
 
-  const format = fileFormat(path || preview);
+  const format = fileFormat(path || fileUrl);
+
+  const handleClick = () => {
+    window.open(fileUrl, '_blank');
+  }
 
   const renderContent =
     format === 'image' && imageView ? (
       <Box
+        onClick={() => handleClick()}
         component="img"
-        src={preview}
+        src={fileUrl}
         sx={{
           width: 1,
           height: 1,
           flexShrink: 0,
           objectFit: 'cover',
+          cursor: 'pointer',
           ...imgSx,
         }}
       />
     ) : (
       <Box
+        onClick={() => handleClick()}
         component="img"
         src={fileThumb(format)}
         sx={{
           width: 32,
           height: 32,
           flexShrink: 0,
+          cursor: 'pointer',
           ...sx,
         }}
       />

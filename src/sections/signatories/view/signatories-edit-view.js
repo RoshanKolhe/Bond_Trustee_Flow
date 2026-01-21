@@ -50,7 +50,7 @@ export default function SignatoriesEditView() {
         }}
       />
 
-      <SignatoriesNewEditForm currentSignatories={signatorie} />
+      <SignatoriesNewEditForm currentUser={signatorie} />
     </Container>
   );
 }
