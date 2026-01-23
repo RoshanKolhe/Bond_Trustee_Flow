@@ -331,7 +331,6 @@ export default function SignatoriesNewEditForm({
               name="name"
               label="Name*"
               disabled={isViewMode}
-              InputLabelProps={{ shrink: true }}
             />
           </Grid>
 
@@ -341,7 +340,6 @@ export default function SignatoriesNewEditForm({
               label="Email*"
               type="email"
               disabled={isViewMode}
-              InputLabelProps={{ shrink: true }}
             />
           </Grid>
 
@@ -351,7 +349,6 @@ export default function SignatoriesNewEditForm({
               label="Phone Number*"
               type="tel"
               disabled={isViewMode}
-              InputLabelProps={{ shrink: true }}
               inputProps={{ maxLength: 10 }}
             />
           </Grid>
@@ -361,7 +358,6 @@ export default function SignatoriesNewEditForm({
               name="role"
               label="Designation*"
               disabled={isViewMode}
-              InputLabelProps={{ shrink: true }}
             >
               {ROLES.map((role) => (
                 <MenuItem key={role.value} value={role.value}>
@@ -377,8 +373,7 @@ export default function SignatoriesNewEditForm({
                 name="customDesignation"
                 label="Enter Custom Designation*"
                 placeholder="Enter custom designation"
-                InputLabelProps={{ shrink: true }}
-              />
+                />
             </Grid>
           )}
 
@@ -411,7 +406,6 @@ export default function SignatoriesNewEditForm({
               name="submittedPanFullName"
               label="PAN Holder Full Name*"
               disabled={!isPanUploaded || isViewMode}
-              InputLabelProps={{ shrink: true }}
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />
           </Grid>
@@ -421,7 +415,6 @@ export default function SignatoriesNewEditForm({
               name="submittedPanNumber"
               label="PAN Number*"
               disabled={!isPanUploaded || isViewMode}
-              InputLabelProps={{ shrink: true }}
             />
           </Grid>
 
