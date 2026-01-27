@@ -5,34 +5,28 @@ import * as Yup from 'yup';
 import {
   Box,
   Grid,
-  Paper,
   Stack,
   Typography,
   MenuItem,
   Checkbox,
   FormControlLabel,
   Card,
-  Button,
 } from '@mui/material';
 
 import FormProvider, { RHFTextField, RHFSelect, RHFCustomFileUploadBox } from 'src/components/hook-form';
-import RHFFileUploadBox from 'src/components/custom-file-upload/file-upload';
-
 import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-
-import axios from 'axios';
-import { useRouter } from 'src/routes/hook';
-import { paths } from 'src/routes/paths';
 import { LoadingButton } from '@mui/lab';
+import { useGetAddressDetails } from 'src/api/address-details';
+import { useSnackbar } from 'notistack';
+import axiosInstance from 'src/utils/axios';
 
 export default function AddressNewForm({ onClose }) {
+  const { enqueueSnackbar } = useSnackbar();
   const [isUploading, setIsUploading] = useState(false);
-  const [addressExists, setAddressExists] = useState(false);
-
-  const accessToken = sessionStorage.getItem('accessToken');
-  const companyId = sessionStorage.getItem('company_information_id');
-  const router = useRouter();
+  const { registeredAddress, correspondenceAddress, addressDetailsLoading } = useGetAddressDetails();
+  const [registeredAddressData, setRegisteredAddressData] = useState(null);
+  const [correspondenceAddressData, setCorrespondenceAddressData] = useState(null);
 
   // ----------------------------- Validation Schema -----------------------------
   const AddressSchema = Yup.object().shape({
@@ -43,8 +37,8 @@ export default function AddressNewForm({ onClose }) {
     registeredCity: Yup.string().required('Required'),
     registeredState: Yup.string().required('Required'),
     registeredPincode: Yup.string().required('Required').matches(/^[0-9]+$/, 'Invalid'),
-    registeredEmail: Yup.string().email('Invalid').required('Required'),
-    registeredPhone: Yup.string().required('Required').matches(/^[0-9]{10}$/, 'Must be 10 digits'),
+    // registeredEmail: Yup.string().email('Invalid').required('Required'),
+    // registeredPhone: Yup.string().required('Required').matches(/^[0-9]{10}$/, 'Must be 10 digits'),
 
     sameAsRegistered: Yup.boolean(),
 
@@ -66,8 +60,8 @@ export default function AddressNewForm({ onClose }) {
       is: false,
       then: (s) => s.required('Required').matches(/^[0-9]{6}$/, 'Invalid'),
     }),
-    correspondenceEmail: Yup.string().email('Invalid'),
-    correspondencePhone: Yup.string(),
+    // correspondenceEmail: Yup.string().email('Invalid'),
+    // correspondencePhone: Yup.string(),
 
     addressProof: Yup.mixed().required('Required'),
   });
@@ -75,31 +69,40 @@ export default function AddressNewForm({ onClose }) {
   // ----------------------------- Form Defaults -----------------------------
   const defaultValues = useMemo(
     () => ({
-      documentType: 'electricityBill',
+      documentType: registeredAddressData?.documentType || 'electricity_bill',
 
-      registeredAddressLine1: '',
-      registeredAddressLine2: '',
-      registeredCountry: 'India',
-      registeredCity: '',
-      registeredState: '',
-      registeredPincode: '',
-      registeredEmail: '',
-      registeredPhone: '',
+      // -------- Registered --------
+      registeredAddressLine1: registeredAddressData?.addressLineOne || '',
+      registeredAddressLine2: registeredAddressData?.addressLineTwo || '',
+      registeredCountry: registeredAddressData?.country || 'India',
+      registeredCity: registeredAddressData?.city || '',
+      registeredState: registeredAddressData?.state || '',
+      registeredPincode: registeredAddressData?.pincode || '',
 
-      sameAsRegistered: false,
+      // -------- Same as Registered --------
+      sameAsRegistered:
+        !!registeredAddressData &&
+        !!correspondenceAddressData &&
+        registeredAddressData.addressLineOne ===
+        correspondenceAddressData.addressLineOne &&
+        registeredAddressData.city === correspondenceAddressData.city &&
+        registeredAddressData.state === correspondenceAddressData.state &&
+        registeredAddressData.pincode === correspondenceAddressData.pincode,
 
-      correspondenceAddressLine1: '',
-      correspondenceAddressLine2: '',
-      correspondenceCity: '',
-      correspondenceCountry: 'India',
-      correspondenceState: '',
-      correspondencePincode: '',
-      correspondenceEmail: '',
-      correspondencePhone: '',
+      // -------- Correspondence --------
+      correspondenceAddressLine1:
+        correspondenceAddressData?.addressLineOne || '',
+      correspondenceAddressLine2:
+        correspondenceAddressData?.addressLineTwo || '',
+      correspondenceCountry: correspondenceAddressData?.country || 'India',
+      correspondenceCity: correspondenceAddressData?.city || '',
+      correspondenceState: correspondenceAddressData?.state || '',
+      correspondencePincode: correspondenceAddressData?.pincode || '',
 
-      addressProof: null,
+      // -------- Proof --------
+      addressProof: registeredAddressData?.addressProof || null
     }),
-    []
+    [registeredAddressData, correspondenceAddressData],
   );
 
   const methods = useForm({
@@ -107,7 +110,7 @@ export default function AddressNewForm({ onClose }) {
     resolver: yupResolver(AddressSchema),
   });
 
-  const { handleSubmit, setValue, watch, control } = methods;
+  const { reset, handleSubmit, setValue, watch, control } = methods;
 
   const sameAsRegistered = watch('sameAsRegistered');
   const documentType = useWatch({ control, name: 'documentType' });
@@ -124,177 +127,92 @@ export default function AddressNewForm({ onClose }) {
       setValue('correspondenceEmail', watch('registeredEmail'));
       setValue('correspondencePhone', watch('registeredPhone'));
     }
-  }, [
-    sameAsRegistered,
-    watch('registeredAddressLine1'),
-    watch('registeredAddressLine2'),
-    watch('registeredCountry'),
-    watch('registeredCity'),
-    watch('registeredState'),
-    watch('registeredPincode'),
-    watch('registeredEmail'),
-    watch('registeredPhone'),
-  ]);
-
-  // ----------------------------- Fetch Address API -----------------------------
-  useEffect(() => {
-    const fetchAddress = async () => {
-      const base = process.env.REACT_APP_HOST_API || '';
-      try {
-        const res = await fetch(`${base}/api/kyc/issuer_kyc/company/address/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-          },
-        });
-
-        if (!res.ok) return;
-
-        const json = await res.json();
-        const data = json?.addresses || {};
-
-        const reg = data.registered || {};
-        const corr = data.correspondence || {};
-
-        // Registered
-        setValue('registeredAddressLine1', reg.registered_office || '');
-        setValue('registeredAddressLine2', reg.registered_office_line2 || '');
-        setValue('registeredCity', reg.city || '');
-        setValue('registeredState', reg.state_ut || '');
-        setValue('registeredPincode', reg.pin_code || '');
-        setValue('registeredEmail', reg.contact_email || '');
-        setValue(
-          'registeredPhone',
-          (reg.contact_phone || '').replace(/\D/g, '').slice(-10)
-        );
-
-        // Correspondence (kept separate!)
-        setValue(
-          'correspondenceAddressLine1',
-          corr.correspondence_address || corr.registered_office || ''
-        );
-        setValue(
-          'correspondenceAddressLine2',
-          corr.correspondence_address_line2 || corr.registered_office_line2 || ''
-        );
-        setValue('correspondenceCity', corr.correspondence_city || '');
-        setValue('correspondenceCountry', corr.correspondence_country || 'India');
-        setValue('correspondenceState', corr.correspondence_state_ut || '');
-        setValue('correspondencePincode', corr.correspondence_pin_code || '');
-        setValue('correspondenceEmail', corr.correspondence_email || '');
-        setValue(
-          'correspondencePhone',
-          (corr.correspondence_phone || '').replace(/\D/g, '').slice(-10)
-        );
-
-        setAddressExists(Boolean(reg.address_id || corr.address_id));
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    fetchAddress();
-  }, [companyId]);
-
-  // ----------------------------- Fetch User API -----------------------------
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const res = await axios.get('/api/auth/v1/me/', {
-          headers: {
-            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-          },
-        });
-
-        const user = res?.data?.data || {};
-
-        setValue('registeredEmail', user.email || '');
-        setValue(
-          'registeredPhone',
-          (user.mobile_number || '').replace(/\D/g, '').slice(-10)
-        );
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+  }, [sameAsRegistered, setValue, watch]);
 
   // ----------------------------- Submit API -----------------------------
   const onSubmit = async (form) => {
-    const base = process.env.REACT_APP_HOST_API || '';
-    const payload = {};
-
-    const add = (k, v) => (payload[k] = v ?? '');
-
-    add('is_same_address', String(form.sameAsRegistered));
-    add('registered_office', form.registeredAddressLine1);
-    add('city', form.registeredCity);
-    add('state_ut', form.registeredState);
-    add('pin_code', form.registeredPincode);
-    add('contact_email', form.registeredEmail);
-    add(
-      'contact_phone',
-      form.registeredPhone.startsWith('+')
-        ? form.registeredPhone
-        : `+91${form.registeredPhone}`
-    );
-
-    add(
-      'correspondence_address',
-      form.sameAsRegistered ? form.registeredAddressLine1 : form.correspondenceAddressLine1
-    );
-    add(
-      'correspondence_city',
-      form.sameAsRegistered ? form.registeredCity : form.correspondenceCity
-    );
-    add(
-      'correspondence_state_ut',
-      form.sameAsRegistered ? form.registeredState : form.correspondenceState
-    );
-    add(
-      'correspondence_pin_code',
-      form.sameAsRegistered ? form.registeredPincode : form.correspondencePincode
-    );
-
-    add('correspondence_country', 'India');
-    add(
-      'correspondence_email',
-      form.sameAsRegistered ? form.registeredEmail : form.correspondenceEmail
-    );
-    add(
-      'correspondence_phone',
-      form.sameAsRegistered
-        ? `+91${form.registeredPhone}`
-        : `+91${form.correspondencePhone}`
-    );
-
     try {
       setIsUploading(true);
 
-      const method = addressExists ? 'PUT' : 'POST';
+      const registeredAddress = {
+        addressType: 'registered',
+        addressLineOne: form.registeredAddressLine1,
+        addressLineTwo: form.registeredAddressLine2 || null,
+        country: form.registeredCountry,
+        city: form.registeredCity,
+        state: form.registeredState,
+        pincode: form.registeredPincode,
+        documentType: form.documentType,
+        addressProofId: form.addressProof?.id,
+      };
 
-      const res = await fetch(`${base}/api/kyc/issuer_kyc/company/address/`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-        body: JSON.stringify(payload),
+      const correspondenceAddress = {
+        addressType: 'correspondence',
+        addressLineOne: form.sameAsRegistered
+          ? form.registeredAddressLine1
+          : form.correspondenceAddressLine1,
+        addressLineTwo: form.sameAsRegistered
+          ? form.registeredAddressLine2 || null
+          : form.correspondenceAddressLine2 || null,
+        country: form.sameAsRegistered
+          ? form.registeredCountry
+          : form.correspondenceCountry,
+        city: form.sameAsRegistered
+          ? form.registeredCity
+          : form.correspondenceCity,
+        state: form.sameAsRegistered
+          ? form.registeredState
+          : form.correspondenceState,
+        pincode: form.sameAsRegistered
+          ? form.registeredPincode
+          : form.correspondencePincode,
+        documentType: form.documentType,
+        addressProofId: form.addressProof?.id,
+      };
+
+      const payload = {
+        registeredAddress,
+        correspondenceAddress,
+      };
+
+      await axiosInstance.post(
+        '/trustee-profiles/address-details',
+        payload,
+      );
+
+      enqueueSnackbar('Address details saved successfully', {
+        variant: 'success',
       });
 
-      if (!res.ok) throw new Error('Failed');
-
-      alert('Address Saved');
       onClose?.();
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      enqueueSnackbar(
+        error?.response?.data?.error?.message || 'Failed to save address',
+        { variant: 'error' },
+      );
     } finally {
       setIsUploading(false);
     }
   };
+
+
+  useEffect(() => {
+    if ((registeredAddress || correspondenceAddress) && !addressDetailsLoading) {
+      if (registeredAddress) {
+        setRegisteredAddressData(registeredAddress);
+      }
+
+      if (correspondenceAddress) {
+        setCorrespondenceAddressData(correspondenceAddress);
+      }
+    }
+  }, [registeredAddress, correspondenceAddress, addressDetailsLoading]);
+
+  useEffect(() => {
+    if (registeredAddress) {
+      reset(defaultValues);
+    }
+  }, [registeredAddressData, reset, defaultValues, registeredAddress])
 
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
@@ -306,15 +224,15 @@ export default function AddressNewForm({ onClose }) {
 
             <Box sx={{ width: 200 }}>
               <RHFSelect name="documentType" label="Document Type">
-                <MenuItem value="electricityBill">Electricity Bill</MenuItem>
-                <MenuItem value="leaseAgreement">Lease Agreement</MenuItem>
+                <MenuItem value="electricity_bill">Electricity Bill</MenuItem>
+                <MenuItem value="lease_agreement">Lease Agreement</MenuItem>
               </RHFSelect>
             </Box>
 
-              <RHFCustomFileUploadBox
+            <RHFCustomFileUploadBox
               name="addressProof"
-              label={`Upload ${(documentType === 'electricityBill' && 'Electricity Bill') ||
-                (documentType === 'leaseAgreement' && 'Lease Agreement')
+              label={`Upload ${(documentType === 'electricity_bill' && 'Electricity Bill') ||
+                (documentType === 'lease_agreement' && 'Lease Agreement')
                 }`}
               icon="mdi:file-document-outline"
             // accept={{
@@ -342,10 +260,10 @@ export default function AddressNewForm({ onClose }) {
                   <RHFTextField name="registeredState" label="State" />
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* <Box sx={{ display: 'flex', gap: 2 }}>
                   <RHFTextField name="registeredEmail" label="Email" disabled />
                   <RHFTextField name="registeredPhone" label="Phone" disabled />
-                </Box>
+                </Box> */}
 
                 <RHFTextField name="registeredPincode" label="Pincode" />
               </Stack>
@@ -393,10 +311,10 @@ export default function AddressNewForm({ onClose }) {
                   />
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* <Box sx={{ display: 'flex', gap: 2 }}>
                   <RHFTextField name="correspondenceEmail" label="Email" disabled />
                   <RHFTextField name="correspondencePhone" label="Phone" disabled />
-                </Box>
+                </Box> */}
 
                 <RHFTextField
                   name="correspondencePincode"
@@ -409,12 +327,9 @@ export default function AddressNewForm({ onClose }) {
 
           {/* ---------------- Buttons ---------------- */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-         
             <LoadingButton type="submit" variant="contained" loading={isUploading} sx={{ ml: 'auto' }}>
               Save Changes
             </LoadingButton>
-
-
           </Box>
         </Stack>
       </Stack>

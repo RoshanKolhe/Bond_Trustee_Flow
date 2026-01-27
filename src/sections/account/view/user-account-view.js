@@ -23,7 +23,7 @@ import { useRouter } from 'src/routes/hook';
 const TABS = [
   {
     value: 'basic',
-    label: 'Company Basic Info',
+    label: 'General',
     icon: <Iconify icon="solar:user-id-bold" width={24} />,
   },
   {
@@ -33,7 +33,7 @@ const TABS = [
   },
   {
     value: 'details',
-    label: 'Company Details',
+    label: 'Documents',
     icon: <Iconify icon="solar:buildings-2-bold" width={24} />,
   },
   {

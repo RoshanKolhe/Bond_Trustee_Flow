@@ -118,9 +118,12 @@ export const endpoints = {
     getDocuments: `/trustee-profiles/documents`,
     getProfileData: `/trustee-profiles/me`,
   },
-  assignedIssue:{
-    list: (intermediaryType, intermediaryId ) => `/bond-applications/by-intermediaries/${intermediaryType}/${intermediaryId}`
+  assignedIssue: {
+    list: (intermediaryType, intermediaryId) => `/bond-applications/by-intermediaries/${intermediaryType}/${intermediaryId}`
   },
+
+  addressDetails: '/trustee-profiles/address-details',
+
   trusteeEntityType: {
     list: '/trustee-entity-types',
     filterList: (filter) => `/trustee-entity-types?filter=${filter}`,
